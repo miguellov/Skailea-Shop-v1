@@ -6,11 +6,18 @@ export type Category = {
   created_at?: string
 }
 
+export type Brand = {
+  id: string
+  name: string
+  created_at?: string
+}
+
 /** Fila de `products` (admin / API con service role) */
 export type Product = {
   id: string
   name: string
   category_id: string | null
+  brand_id: string | null
   price: number
   price_mayor: number
   mayor_min: number
@@ -28,6 +35,7 @@ export type ProductPublic = Omit<Product, "active"> & {
   active: true
   category_name: string | null
   category_slug: string | null
+  brand_name: string | null
 }
 
 export type OrderStatus = "nuevo" | "preparando" | "despachado" | "entregado"

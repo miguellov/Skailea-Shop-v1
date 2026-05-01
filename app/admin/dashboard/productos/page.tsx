@@ -10,6 +10,7 @@ export default function AdminProductosPage() {
   const {
     products,
     categories,
+    brands,
     addProduct,
     updateProduct,
     deleteProduct,
@@ -43,6 +44,7 @@ export default function AdminProductosPage() {
     const payload = {
       name: values.name,
       category_id: values.category_id || null,
+      brand_id: values.brand_id?.trim() ? values.brand_id : null,
       price: values.price,
       price_mayor: values.price_mayor,
       mayor_min: values.mayor_min,
@@ -119,6 +121,7 @@ export default function AdminProductosPage() {
       <ProductList
         products={sorted}
         categories={categories}
+        brands={brands}
         onEdit={openEdit}
         onDelete={handleDelete}
         onToggleStock={handleToggleStock}
@@ -129,6 +132,7 @@ export default function AdminProductosPage() {
         open={formOpen}
         onClose={closeForm}
         categories={categories}
+        brands={brands}
         initial={editing}
         onSubmit={handleSave}
       />

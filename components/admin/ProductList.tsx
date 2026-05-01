@@ -1,12 +1,13 @@
 "use client"
 
 import Image from "next/image"
-import type { Category, Product } from "@/lib/types"
+import type { Brand, Category, Product } from "@/lib/types"
 import { formatPriceDOP } from "@/lib/utils"
 
 type Props = {
   products: Product[]
   categories: Category[]
+  brands: Brand[]
   onEdit: (p: Product) => void
   onDelete: (id: string) => void | Promise<void>
   onToggleStock: (id: string) => void | Promise<void>
@@ -18,9 +19,15 @@ function categoryName(categories: Category[], categoryId: string | null) {
   return categories.find((c) => c.id === categoryId)?.name ?? "—"
 }
 
+function brandName(brands: Brand[], brandId: string | null) {
+  if (!brandId) return null
+  return brands.find((b) => b.id === brandId)?.name ?? null
+}
+
 export function ProductList({
   products,
   categories,
+  brands,
   onEdit,
   onDelete,
   onToggleStock,
@@ -38,6 +45,7 @@ export function ProductList({
     <ul className="flex flex-col gap-3">
       {products.map((p) => {
         const out = p.stock === 0
+        const bLabel = brandName(brands, p.brand_id)
         return (
           <li
             key={p.id}
@@ -63,6 +71,12 @@ export function ProductList({
               <p className="font-semibold text-skailea-deep">{p.name}</p>
               <p className="text-xs text-skailea-rose">
                 {categoryName(categories, p.category_id)}
+                {bLabel && (
+                  <span className="text-skailea-charcoal/80">
+                    {" "}
+                    · {bLabel}
+                  </span>
+                )}
               </p>
               <p className="mt-1 text-sm text-skailea-deep">
                 {formatPriceDOP(p.price)}

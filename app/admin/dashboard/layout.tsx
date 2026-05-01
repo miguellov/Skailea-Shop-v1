@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic"
 import { AdminProductsProvider } from "@/components/admin/AdminProductsContext"
 import { AdminShell } from "@/components/admin/AdminShell"
 import {
+  fetchAllBrandsAdmin,
   fetchAllCategoriesAdmin,
   fetchAllProductsAdmin,
 } from "@/lib/supabase-admin-queries"
@@ -16,17 +17,20 @@ export default async function AdminDashboardLayout({
 }: {
   children: ReactNode
 }) {
-  const [initialProducts, initialCategories, newOrdersCount] = await Promise.all([
-    fetchAllProductsAdmin(),
-    fetchAllCategoriesAdmin(),
-    getNewOrdersCount(),
-  ])
+  const [initialProducts, initialCategories, initialBrands, newOrdersCount] =
+    await Promise.all([
+      fetchAllProductsAdmin(),
+      fetchAllCategoriesAdmin(),
+      fetchAllBrandsAdmin(),
+      getNewOrdersCount(),
+    ])
 
   return (
     <AdminAuthGate>
       <AdminProductsProvider
         initialProducts={initialProducts}
         initialCategories={initialCategories}
+        initialBrands={initialBrands}
       >
         <AdminShell newOrdersCount={newOrdersCount}>{children}</AdminShell>
       </AdminProductsProvider>

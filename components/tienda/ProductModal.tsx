@@ -95,9 +95,17 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
             >
               {product.name}
             </h2>
-            {product.category_name && (
+            {(product.category_name || product.brand_name) && (
               <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-skailea-gold sm:text-xs">
                 {product.category_name}
+                {product.category_name && product.brand_name ? (
+                  <span className="font-normal text-skailea-charcoal/75">
+                    {" "}
+                    · {product.brand_name}
+                  </span>
+                ) : (
+                  product.brand_name
+                )}
               </p>
             )}
           </div>

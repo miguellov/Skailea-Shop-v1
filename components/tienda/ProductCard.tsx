@@ -37,9 +37,17 @@ export function ProductCard({ product, onOpen }: Props) {
           )}
         </div>
         <div className="flex flex-1 flex-col gap-1 p-2.5 sm:gap-1.5 sm:p-3 md:p-3.5">
-          {product.category_name && (
+          {(product.category_name || product.brand_name) && (
             <p className="line-clamp-1 text-[9px] font-semibold uppercase tracking-[0.18em] text-skailea-gold sm:text-[10px]">
               {product.category_name}
+              {product.category_name && product.brand_name ? (
+                <span className="font-normal text-skailea-charcoal/75">
+                  {" "}
+                  · {product.brand_name}
+                </span>
+              ) : (
+                product.brand_name
+              )}
             </p>
           )}
           <p className="line-clamp-2 min-h-[2.25rem] font-playfair text-[13px] font-medium leading-tight tracking-tight text-skailea-deep sm:min-h-[2.5rem] sm:text-[15px] md:text-base">

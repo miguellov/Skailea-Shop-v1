@@ -1,14 +1,15 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import type { Category, ProductPublic } from "@/lib/types"
-import { CategoryFilter } from "@/components/tienda/CategoryFilter"
+import type { Brand, Category, ProductPublic } from "@/lib/types"
+import { CatalogFilters } from "@/components/tienda/CatalogFilters"
 import { ProductCard } from "@/components/tienda/ProductCard"
 import { ProductModal } from "@/components/tienda/ProductModal"
 import { StoreLogo } from "@/components/tienda/StoreLogo"
 
 type Props = {
   categories: Category[]
+  brands: Brand[]
   products: ProductPublic[]
   whatsappDigits: string
 }
@@ -31,8 +32,14 @@ function SearchIcon({ className }: { className?: string }) {
   )
 }
 
-export function CatalogoCliente({ categories, products, whatsappDigits }: Props) {
-  const [slug, setSlug] = useState<string | null>(null)
+export function CatalogoCliente({
+  categories,
+  brands,
+  products,
+  whatsappDigits,
+}: Props) {
+  const [categorySlug, setCategorySlug] = useState<string | null>(null)
+  const [brandId, setBrandId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [open, setOpen] = useState<ProductPublic | null>(null)
 
@@ -47,26 +54,34 @@ export function CatalogoCliente({ categories, products, whatsappDigits }: Props)
         const name = p.name.toLowerCase()
         const cat = (p.category_name ?? "").toLowerCase()
         const slugWords = (p.category_slug ?? "").replace(/-/g, " ").toLowerCase()
+        const brand = (p.brand_name ?? "").toLowerCase()
         return (
           name.includes(qLower) ||
           cat.includes(qLower) ||
-          slugWords.includes(qLower)
+          slugWords.includes(qLower) ||
+          brand.includes(qLower)
         )
       })
     }
 
-    if (!slug) return products
-    return products.filter((p) => p.category_slug === slug)
-  }, [products, slug, searchQuery])
+    let list = products
+    if (categorySlug) {
+      list = list.filter((p) => p.category_slug === categorySlug)
+    }
+    if (brandId) {
+      list = list.filter((p) => p.brand_id === brandId)
+    }
+    return list
+  }, [products, categorySlug, brandId, searchQuery])
 
   const emptyCatalog = products.length === 0
   const searchTrimmed = searchQuery.trim()
   const showSearchEmpty =
     !emptyCatalog && searchTrimmed.length > 0 && filtered.length === 0
-  const showCategoryEmpty =
+  const showFilterEmpty =
     !emptyCatalog &&
     searchTrimmed.length === 0 &&
-    slug !== null &&
+    (categorySlug !== null || brandId !== null) &&
     filtered.length === 0
 
   return (
@@ -130,7 +145,14 @@ export function CatalogoCliente({ categories, products, whatsappDigits }: Props)
       </section>
 
       <main className="mx-auto max-w-6xl px-3 pb-28 pt-1 sm:px-6 sm:pb-32">
-        <CategoryFilter categories={categories} selectedSlug={slug} onSelect={setSlug} />
+        <CatalogFilters
+          categories={categories}
+          brands={brands}
+          selectedCategorySlug={categorySlug}
+          selectedBrandId={brandId}
+          onSelectCategory={setCategorySlug}
+          onSelectBrand={setBrandId}
+        />
 
         {emptyCatalog ? (
           <p className="py-20 text-center text-sm font-medium text-skailea-charcoal/70">
@@ -140,9 +162,9 @@ export function CatalogoCliente({ categories, products, whatsappDigits }: Props)
           <p className="py-20 text-center text-sm text-skailea-charcoal/75">
             No encontramos productos para &apos;{searchTrimmed}&apos;
           </p>
-        ) : showCategoryEmpty ? (
+        ) : showFilterEmpty ? (
           <p className="py-20 text-center text-sm text-skailea-charcoal/70">
-            No hay productos en esta categoría.
+            No hay productos con los filtros seleccionados.
           </p>
         ) : (
           <ul className="mt-5 grid grid-cols-2 items-stretch gap-2.5 min-[480px]:gap-3 sm:mt-6 md:grid-cols-3 md:gap-3.5 xl:grid-cols-4 xl:gap-4">

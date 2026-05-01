@@ -9,10 +9,11 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import type { Category, Product } from "@/lib/types"
+import type { Brand, Category, Product } from "@/lib/types"
 import {
   createProductAction,
   deleteProductAction,
+  getAdminBrands,
   getAdminCategories,
   getAdminProducts,
   toggleProductStockAction,
@@ -23,6 +24,7 @@ import {
 type AdminProductsContextValue = {
   products: Product[]
   categories: Category[]
+  brands: Brand[]
   addProduct: (data: ProductUpsertInput) => Promise<void>
   updateProduct: (id: string, data: ProductUpsertInput) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
@@ -43,35 +45,42 @@ const AdminProductsContext = createContext<AdminProductsContextValue | null>(
 async function syncFromServer(): Promise<{
   products: Product[]
   categories: Category[]
+  brands: Brand[]
 }> {
-  const [products, categories] = await Promise.all([
+  const [products, categories, brands] = await Promise.all([
     getAdminProducts(),
     getAdminCategories(),
+    getAdminBrands(),
   ])
-  return { products, categories }
+  return { products, categories, brands }
 }
 
 export function AdminProductsProvider({
   children,
   initialProducts,
   initialCategories,
+  initialBrands,
 }: {
   children: ReactNode
   initialProducts: Product[]
   initialCategories: Category[]
+  initialBrands: Brand[]
 }) {
   const [products, setProducts] = useState<Product[]>(initialProducts)
   const [categories, setCategories] = useState<Category[]>(initialCategories)
+  const [brands, setBrands] = useState<Brand[]>(initialBrands)
 
   useEffect(() => {
     setProducts(initialProducts)
     setCategories(initialCategories)
-  }, [initialProducts, initialCategories])
+    setBrands(initialBrands)
+  }, [initialProducts, initialCategories, initialBrands])
 
   const refresh = useCallback(async () => {
-    const { products: p, categories: c } = await syncFromServer()
+    const { products: p, categories: c, brands: b } = await syncFromServer()
     setProducts(p)
     setCategories(c)
+    setBrands(b)
   }, [])
 
   const addProduct = useCallback(
@@ -120,6 +129,7 @@ export function AdminProductsProvider({
     () => ({
       products,
       categories,
+      brands,
       addProduct,
       updateProduct,
       deleteProduct,
@@ -130,6 +140,7 @@ export function AdminProductsProvider({
     [
       products,
       categories,
+      brands,
       addProduct,
       updateProduct,
       deleteProduct,

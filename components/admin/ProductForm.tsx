@@ -2,11 +2,12 @@
 
 import Image from "next/image"
 import { useEffect, useRef, useState } from "react"
-import type { Category, Product } from "@/lib/types"
+import type { Brand, Category, Product } from "@/lib/types"
 
 export type ProductFormValues = {
   name: string
   category_id: string
+  brand_id: string
   price: number
   price_mayor: number
   mayor_min: number
@@ -19,6 +20,7 @@ type Props = {
   open: boolean
   onClose: () => void
   categories: Category[]
+  brands: Brand[]
   initial: Product | null
   onSubmit: (values: ProductFormValues) => void | Promise<void>
 }
@@ -30,6 +32,7 @@ const MAX_PHOTOS = 5
 const empty: ProductFormValues = {
   name: "",
   category_id: "",
+  brand_id: "",
   price: 0,
   price_mayor: 0,
   mayor_min: 1,
@@ -58,7 +61,14 @@ function finalizePhotos(urls: string[]): string[] {
   )
 }
 
-export function ProductForm({ open, onClose, categories, initial, onSubmit }: Props) {
+export function ProductForm({
+  open,
+  onClose,
+  categories,
+  brands,
+  initial,
+  onSubmit,
+}: Props) {
   const [values, setValues] = useState<ProductFormValues>(empty)
   const [photos, setPhotos] = useState<string[]>([])
   const [addTab, setAddTab] = useState<AddPhotoTab>("upload")
@@ -76,6 +86,7 @@ export function ProductForm({ open, onClose, categories, initial, onSubmit }: Pr
       setValues({
         name: initial.name,
         category_id: initial.category_id ?? "",
+        brand_id: initial.brand_id ?? "",
         price: initial.price,
         price_mayor: initial.price_mayor,
         mayor_min: initial.mayor_min,
@@ -96,7 +107,7 @@ export function ProductForm({ open, onClose, categories, initial, onSubmit }: Pr
     setUrlDraft("")
     setPendingFile(null)
     setUploadError(null)
-  }, [open, initial, categories])
+  }, [open, initial, categories, brands])
 
   useEffect(() => {
     if (!open) return
@@ -263,11 +274,35 @@ export function ProductForm({ open, onClose, categories, initial, onSubmit }: Pr
                 setValues((v) => ({ ...v, category_id: e.target.value }))
               }
             >
-              {sorted.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
+              {sorted.length === 0 ? (
+                <option value="">— Sin categorías —</option>
+              ) : (
+                sorted.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+
+          <label className="block text-sm font-medium text-skailea-deep">
+            Marca
+            <select
+              className="mt-1 w-full rounded-xl border border-skailea-blush/60 bg-white px-3 py-2 text-skailea-deep outline-none focus:ring-2 focus:ring-skailea-gold/60"
+              value={values.brand_id}
+              onChange={(e) =>
+                setValues((v) => ({ ...v, brand_id: e.target.value }))
+              }
+            >
+              <option value="">Sin marca</option>
+              {[...brands]
+                .sort((a, b) => a.name.localeCompare(b.name, "es"))
+                .map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
             </select>
           </label>
 

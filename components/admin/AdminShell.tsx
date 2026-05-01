@@ -9,6 +9,7 @@ const nav = [
   { href: "/admin/dashboard", label: "Resumen" },
   { href: "/admin/dashboard/reportes", label: "📊 Reportes" },
   { href: "/admin/dashboard/pedidos", label: "📥 Pedidos" },
+  { href: "/admin/dashboard/categorias", label: "🏷️ Categorías" },
   { href: "/admin/dashboard/productos", label: "Productos" },
 ]
 

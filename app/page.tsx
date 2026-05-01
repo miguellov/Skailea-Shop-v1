@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic"
 
 export default async function Home() {
   const whatsappDigits = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? ""
-  const { categories, products } = await getStoreCatalog()
+  const { categories, brands, products } = await getStoreCatalog()
 
   return (
     <TiendaShell whatsappDigits={whatsappDigits}>
@@ -16,6 +16,7 @@ export default async function Home() {
         <PromoTicker />
         <CatalogoCliente
           categories={categories}
+          brands={brands}
           products={products}
           whatsappDigits={whatsappDigits}
         />

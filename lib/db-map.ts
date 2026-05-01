@@ -26,6 +26,7 @@ export function mapProduct(row: Row): Product {
     id: String(row.id),
     name: String(row.name),
     category_id: row.category_id == null ? null : String(row.category_id),
+    brand_id: row.brand_id == null ? null : String(row.brand_id),
     price: Number(row.price),
     price_mayor: Number(row.price_mayor),
     mayor_min: Number(row.mayor_min),
@@ -43,6 +44,7 @@ export function mapProductPublic(row: Row): ProductPublic {
     id: String(row.id),
     name: String(row.name),
     category_id: row.category_id == null ? null : String(row.category_id),
+    brand_id: row.brand_id == null ? null : String(row.brand_id),
     price: Number(row.price),
     price_mayor: Number(row.price_mayor),
     mayor_min: Number(row.mayor_min),
@@ -56,5 +58,6 @@ export function mapProductPublic(row: Row): ProductPublic {
       row.category_name == null ? null : String(row.category_name),
     category_slug:
       row.category_slug == null ? null : String(row.category_slug),
+    brand_name: row.brand_name == null ? null : String(row.brand_name),
   }
 }
