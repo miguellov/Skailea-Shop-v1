@@ -1,0 +1,157 @@
+import type { Category, Product, ProductPublic } from "@/lib/types"
+
+/** Datos de ejemplo hasta conectar Supabase */
+export const DEMO_CATEGORIES: Category[] = [
+  {
+    id: "c1",
+    name: "Splash Victoria Secret",
+    slug: "splash-victoria-secret",
+    sort_order: 1,
+  },
+  {
+    id: "c2",
+    name: "Velas 3 Mecha BBW",
+    slug: "velas-3-mecha-bbw",
+    sort_order: 2,
+  },
+  {
+    id: "c3",
+    name: "Gel de baño BBW",
+    slug: "gel-de-bano-bbw",
+    sort_order: 3,
+  },
+  {
+    id: "c4",
+    name: "Perfumes Arabes",
+    slug: "perfumes-arabes",
+    sort_order: 4,
+  },
+]
+
+const t = "2026-05-01T12:00:00.000Z"
+
+export const DEMO_PRODUCTS: ProductPublic[] = [
+  {
+    id: "p1",
+    name: "Splash Love Spell VS",
+    category_id: "c1",
+    price: 950,
+    price_mayor: 800,
+    mayor_min: 8,
+    image_url:
+      "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=400&q=80",
+    image_urls: [
+      "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=400&q=80",
+      "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&q=80",
+    ],
+    stock: 14,
+    active: true,
+    created_at: t,
+    updated_at: t,
+    category_name: "Splash Victoria Secret",
+    category_slug: "splash-victoria-secret",
+  },
+  {
+    id: "p2",
+    name: "Splash Pure Seduction",
+    category_id: "c1",
+    price: 950,
+    price_mayor: 800,
+    mayor_min: 8,
+    image_url:
+      "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&q=80",
+    image_urls: [],
+    stock: 0,
+    active: true,
+    created_at: t,
+    updated_at: t,
+    category_name: "Splash Victoria Secret",
+    category_slug: "splash-victoria-secret",
+  },
+  {
+    id: "p3",
+    name: "Vela Champagne Toast 3 mechas",
+    category_id: "c2",
+    price: 1850,
+    price_mayor: 1580,
+    mayor_min: 6,
+    image_url:
+      "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=400&q=80",
+    image_urls: [],
+    stock: 5,
+    active: true,
+    created_at: t,
+    updated_at: t,
+    category_name: "Velas 3 Mecha BBW",
+    category_slug: "velas-3-mecha-bbw",
+  },
+  {
+    id: "p4",
+    name: "Vela Mahogany Teakwood",
+    category_id: "c2",
+    price: 1950,
+    price_mayor: 1650,
+    mayor_min: 6,
+    image_url:
+      "https://images.unsplash.com/photo-1612817288484-6f916006741a?w=400&q=80",
+    image_urls: [],
+    stock: 3,
+    active: true,
+    created_at: t,
+    updated_at: t,
+    category_name: "Velas 3 Mecha BBW",
+    category_slug: "velas-3-mecha-bbw",
+  },
+  {
+    id: "p5",
+    name: "Gel Japanese Cherry Blossom",
+    category_id: "c3",
+    price: 720,
+    price_mayor: 620,
+    mayor_min: 10,
+    image_url:
+      "https://images.unsplash.com/photo-1619994403073-2cec844b8e63?w=400&q=80",
+    image_urls: [],
+    stock: 20,
+    active: true,
+    created_at: t,
+    updated_at: t,
+    category_name: "Gel de baño BBW",
+    category_slug: "gel-de-bano-bbw",
+  },
+  {
+    id: "p6",
+    name: "Perfume árabe Lattafa Yara",
+    category_id: "c4",
+    price: 2400,
+    price_mayor: 2100,
+    mayor_min: 4,
+    image_url:
+      "https://images.unsplash.com/photo-1541643600914-78b084683702?w=400&q=80",
+    image_urls: [],
+    stock: 8,
+    active: true,
+    created_at: t,
+    updated_at: t,
+    category_name: "Perfumes Arabes",
+    category_slug: "perfumes-arabes",
+  },
+]
+
+/** Copia inicial para el panel admin (misma data que el catálogo demo) */
+export function getInitialAdminProducts(): Product[] {
+  return DEMO_PRODUCTS.map((p) => ({
+    id: p.id,
+    name: p.name,
+    category_id: p.category_id,
+    price: p.price,
+    price_mayor: p.price_mayor,
+    mayor_min: p.mayor_min,
+    image_url: p.image_url,
+    image_urls: p.image_urls ?? [],
+    stock: p.stock,
+    active: p.active,
+    created_at: p.created_at,
+    updated_at: p.updated_at,
+  }))
+}
