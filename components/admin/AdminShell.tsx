@@ -7,6 +7,7 @@ import { ADMIN_SESSION_KEY } from "@/lib/admin-session"
 
 const nav = [
   { href: "/admin/dashboard", label: "Resumen" },
+  { href: "/admin/dashboard/reportes", label: "📊 Reportes" },
   { href: "/admin/dashboard/pedidos", label: "📥 Pedidos" },
   { href: "/admin/dashboard/productos", label: "Productos" },
 ]
@@ -29,7 +30,7 @@ export function AdminShell({
   return (
     <div className="min-h-screen bg-skailea-cream text-skailea-deep">
       <header className="sticky top-0 z-20 border-b border-skailea-blush/50 bg-skailea-deep text-skailea-cream">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <Link href="/admin/dashboard" className="font-serif text-lg font-semibold">
             Skailea <span className="text-skailea-gold">Admin</span>
           </Link>
@@ -74,7 +75,7 @@ export function AdminShell({
           </nav>
         </div>
       </header>
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">{children}</div>
     </div>
   )
 }
