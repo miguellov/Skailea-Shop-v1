@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { createOrder } from "@/app/admin/order-actions"
+import { formatSupabaseError } from "@/lib/supabase-errors"
 import type { DeliveryType, Product } from "@/lib/types"
 import { formatPriceDOP, formatRdCartMoney } from "@/lib/utils"
 
@@ -28,12 +29,14 @@ export function ManualOrderModal({ open, onClose, products, onSaved }: Props) {
   const [pickId, setPickId] = useState("")
   const [pickQty, setPickQty] = useState(1)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!open) return
     setDeliveryType("envio")
     setAddressFull("")
     setProvinceCity("")
+    setSaveError(null)
   }, [open])
 
   const activeProducts = useMemo(
@@ -105,6 +108,7 @@ export function ManualOrderModal({ open, onClose, products, onSaved }: Props) {
       deliveryType === "envio"
         ? `${addressFull.trim()}\n${provinceCity.trim()}`
         : null
+    setSaveError(null)
     setSaving(true)
     try {
       await createOrder({
@@ -125,7 +129,9 @@ export function ManualOrderModal({ open, onClose, products, onSaved }: Props) {
       onSaved()
       onClose()
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Error al guardar")
+      const detail = formatSupabaseError(err)
+      setSaveError(detail)
+      console.error("[ManualOrderModal] createOrder error:", detail)
     } finally {
       setSaving(false)
     }
@@ -145,6 +151,17 @@ export function ManualOrderModal({ open, onClose, products, onSaved }: Props) {
         aria-modal="true"
       >
         <h2 className="font-serif text-xl font-bold text-skailea-deep">Nuevo pedido manual</h2>
+        {saveError && (
+          <div
+            role="alert"
+            className="mt-3 rounded-xl border border-red-400/80 bg-red-50 px-3 py-2 text-xs leading-snug text-red-950"
+          >
+            <p className="font-semibold">No se pudo guardar el pedido</p>
+            <pre className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap break-words font-sans text-[11px]">
+              {saveError}
+            </pre>
+          </div>
+        )}
         <form onSubmit={(e) => void handleSave(e)} className="mt-4 flex flex-col gap-3">
           <label className="block text-sm font-medium text-skailea-deep">
             Cliente

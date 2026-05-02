@@ -1,9 +1,7 @@
 "use server"
 
-import {
-  createPublicServerClient,
-  createServiceRoleClient,
-} from "@/lib/supabase-server"
+import { createServiceRoleClient } from "@/lib/supabase-server"
+import { formatSupabaseError } from "@/lib/supabase-errors"
 import { triggerOrderNotificationFetch } from "@/lib/order-notify"
 import type {
   DeliveryType,
@@ -84,17 +82,37 @@ function utcDayBounds(): { start: string; end: string } {
   return { start: start.toISOString(), end: end.toISOString() }
 }
 
-/** Pedido desde la tienda pública (WhatsApp). Insert con rol `anon` (RLS). */
+/**
+ * Pedido desde la tienda pública (WhatsApp).
+ * Usa **service role** en esta Server Action (solo servidor): bypass RLS y mismo
+ * comportamiento que pedidos manuales; evita fallos si falta anon key o RLS mal configurado.
+ */
 export async function submitStoreOrder(
   input: SubmitStoreOrderInput
 ): Promise<void> {
-  const sb = createPublicServerClient()
+  console.log(
+    "[submitStoreOrder] (1) Cliente: createServiceRoleClient — SERVICE ROLE (bypass RLS)"
+  )
+  console.log("[submitStoreOrder] (2) Input recibido:", JSON.stringify(input, null, 2))
+
+  let sb: ReturnType<typeof createServiceRoleClient>
+  try {
+    sb = createServiceRoleClient()
+    console.log("[submitStoreOrder] (3) Cliente Supabase instanciado OK")
+  } catch (envErr) {
+    const msg = formatSupabaseError(envErr)
+    console.error("[submitStoreOrder] ERROR creando cliente:", msg)
+    throw new Error(`Supabase (service role): ${msg}`)
+  }
+
   const name = input.customer_name.trim()
   const phone = input.customer_phone.replace(/\D/g, "")
   if (!name || !phone) {
+    console.warn("[submitStoreOrder] Validación: falta nombre o teléfono")
     throw new Error("Nombre y teléfono son obligatorios")
   }
   if (!input.items.length) {
+    console.warn("[submitStoreOrder] Validación: sin ítems")
     throw new Error("El pedido no tiene artículos")
   }
   const dtype: DeliveryType =
@@ -121,14 +139,32 @@ export async function submitStoreOrder(
     total: input.total,
     status: "nuevo" as const,
     notes: input.notes ?? null,
+    paid: false,
+    payment_method: null,
+    paid_at: null,
+    invoice_number: null,
   }
 
-  const { error } = await sb.from("orders").insert(orderData)
+  console.log("[submitStoreOrder] (4) Insert payload:", JSON.stringify(orderData, null, 2))
 
-  console.log("Guardando pedido:", orderData)
-  console.log("Error si hay:", error)
+  const { data: inserted, error } = await sb
+    .from("orders")
+    .insert(orderData)
+    .select("id")
+    .maybeSingle()
 
-  if (error) throw new Error(error.message)
+  console.log("[submitStoreOrder] (5) Resultado insert — data:", inserted, "error:", error)
+
+  if (error) {
+    const full = formatSupabaseError(error)
+    console.error("[submitStoreOrder] ERROR Supabase completo:", full)
+    throw new Error(`Supabase insert: ${full}`)
+  }
+  if (!inserted?.id) {
+    console.error("[submitStoreOrder] Insert sin id devuelto:", inserted)
+    throw new Error("El pedido no se guardó (sin id en respuesta)")
+  }
+  console.log("[submitStoreOrder] (6) OK pedido id:", inserted.id)
 
   try {
     await triggerOrderNotificationFetch({
@@ -146,8 +182,11 @@ export async function submitStoreOrder(
       total: input.total,
       notes: input.notes ?? null,
     })
-  } catch {
-    /* el fetch interno ya es tolerante; capa extra por si cambia la impl. */
+  } catch (notifyErr) {
+    console.warn(
+      "[submitStoreOrder] Aviso: notificación email falló (pedido ya guardado):",
+      formatSupabaseError(notifyErr)
+    )
   }
 }
 
@@ -316,7 +355,21 @@ export async function createOrder(input: {
   lines: { product_id: string; quantity: number }[]
   notes: string | null
 }): Promise<void> {
-  const sb = createServiceRoleClient()
+  console.log(
+    "[createOrder] (1) Cliente: createServiceRoleClient — SERVICE ROLE (bypass RLS)"
+  )
+  console.log("[createOrder] (2) Input:", JSON.stringify(input, null, 2))
+
+  let sb: ReturnType<typeof createServiceRoleClient>
+  try {
+    sb = createServiceRoleClient()
+    console.log("[createOrder] (3) Cliente Supabase instanciado OK")
+  } catch (envErr) {
+    const msg = formatSupabaseError(envErr)
+    console.error("[createOrder] ERROR creando cliente:", msg)
+    throw new Error(`Supabase (service role): ${msg}`)
+  }
+
   if (!input.lines.length) throw new Error("Sin líneas")
 
   const dtype: DeliveryType =
@@ -335,7 +388,12 @@ export async function createOrder(input: {
     .from("products")
     .select("id, name, price")
     .in("id", ids)
-  if (pe) throw new Error(pe.message)
+  console.log("[createOrder] (4) Productos cargados:", products?.length, "error:", pe)
+  if (pe) {
+    const full = formatSupabaseError(pe)
+    console.error("[createOrder] ERROR select products:", full)
+    throw new Error(`Supabase (products): ${full}`)
+  }
   const byId = new Map(
     (products ?? []).map((p) => [
       String((p as { id: string }).id),
@@ -361,7 +419,7 @@ export async function createOrder(input: {
   const total = items.reduce((s, i) => s + i.line_total, 0)
   const phone = input.customer_phone.replace(/\D/g, "")
 
-  const { error } = await sb.from("orders").insert({
+  const row = {
     customer_name: input.customer_name.trim(),
     customer_phone: phone,
     delivery_type: dtype,
@@ -369,10 +427,34 @@ export async function createOrder(input: {
     delivery_notes: null,
     items,
     total,
-    status: "nuevo",
+    status: "nuevo" as const,
     notes: input.notes,
-  })
-  if (error) throw new Error(error.message)
+    paid: false,
+    payment_method: null,
+    paid_at: null,
+    invoice_number: null,
+  }
+
+  console.log("[createOrder] (5) Insert orders payload:", JSON.stringify(row, null, 2))
+
+  const { data: inserted, error } = await sb
+    .from("orders")
+    .insert(row)
+    .select("id")
+    .maybeSingle()
+
+  console.log("[createOrder] (6) Resultado insert — data:", inserted, "error:", error)
+
+  if (error) {
+    const full = formatSupabaseError(error)
+    console.error("[createOrder] ERROR Supabase insert:", full)
+    throw new Error(`Supabase insert: ${full}`)
+  }
+  if (!inserted?.id) {
+    console.error("[createOrder] Insert sin id:", inserted)
+    throw new Error("El pedido no se guardó (sin id en respuesta)")
+  }
+  console.log("[createOrder] (7) OK pedido id:", inserted.id)
 
   try {
     await triggerOrderNotificationFetch({
@@ -390,7 +472,10 @@ export async function createOrder(input: {
       total,
       notes: input.notes,
     })
-  } catch {
-    /* no bloquear pedido manual */
+  } catch (notifyErr) {
+    console.warn(
+      "[createOrder] Aviso: notificación email falló (pedido ya guardado):",
+      formatSupabaseError(notifyErr)
+    )
   }
 }
