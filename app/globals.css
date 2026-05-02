@@ -54,4 +54,52 @@ body {
       #030818 100%
     );
   }
+
+  @keyframes skailea-brand-gradient {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  /** Nombre principal del header: degradado oro → blanco → oro (loop 3s) */
+  .skailea-brand-title {
+    font-family: var(--font-playfair), Georgia, serif;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1.15;
+    background: linear-gradient(
+      90deg,
+      var(--gold) 0%,
+      #ffffff 48%,
+      #ffffff 52%,
+      var(--gold) 100%
+    );
+    background-size: 220% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: skailea-brand-gradient 3s ease-in-out infinite;
+  }
+
+  @keyframes skailea-tagline-fade {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .skailea-tagline-fade {
+    letter-spacing: 3px;
+    color: var(--blush);
+    animation: skailea-tagline-fade 1.15s ease-out 0.12s forwards;
+    opacity: 0;
+  }
 }
