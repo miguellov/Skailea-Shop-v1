@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { RETIRO_LOCATION_FULL } from "@/lib/shipping-copy"
 import type { Order, OrderStatus } from "@/lib/types"
 import { formatPriceDOP } from "@/lib/utils"
 
@@ -79,13 +80,34 @@ export function OrderDetailModal({ order, onClose }: Props) {
           <div className="rounded-xl border border-skailea-blush/40 bg-white p-3">
             <p className="font-semibold text-skailea-deep">{order.customer_name}</p>
             <p className="text-sm text-skailea-rose">{order.customer_phone}</p>
-            {order.delivery_address && (
+            <p className="mt-2">
+              {order.delivery_type === "retiro" ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-600/35 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
+                  🏪 Retiro
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 rounded-full border border-sky-600/35 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold text-sky-900">
+                  🚚 Envío
+                </span>
+              )}
+            </p>
+            {order.delivery_type === "envio" && order.delivery_address && (
               <div className="mt-3 rounded-lg border border-skailea-gold/35 bg-skailea-cream/80 px-3 py-2">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-skailea-gold">
                   Dirección de envío
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-sm text-skailea-deep">
                   📍 {order.delivery_address}
+                </p>
+              </div>
+            )}
+            {order.delivery_type === "retiro" && (
+              <div className="mt-3 rounded-lg border border-emerald-600/25 bg-emerald-50/80 px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-800">
+                  Retiro en tienda
+                </p>
+                <p className="mt-1 text-sm text-skailea-deep">
+                  📍 {RETIRO_LOCATION_FULL}
                 </p>
               </div>
             )}

@@ -241,6 +241,7 @@ export function CartDrawer() {
         onCompleted={async ({
           customerName,
           customerPhone,
+          deliveryType,
           street,
           citySector,
           province,
@@ -259,14 +260,18 @@ export function CartDrawer() {
             }
           })
           const orderTotal = items.reduce((s, i) => s + i.line_total, 0)
-          const deliveryMultiline = formatDeliveryAddressMultiline({
-            street,
-            citySector,
-            province,
-          })
+          const deliveryMultiline =
+            deliveryType === "envio"
+              ? formatDeliveryAddressMultiline({
+                  street,
+                  citySector,
+                  province,
+                })
+              : null
           await submitStoreOrder({
             customer_name: customerName,
             customer_phone: customerPhone,
+            delivery_type: deliveryType,
             delivery_address: deliveryMultiline,
             delivery_notes: deliveryNotes.trim() || null,
             items,
@@ -278,11 +283,15 @@ export function CartDrawer() {
           const msg = buildCartOrderWhatsAppMessage({
             customerName,
             customerPhoneDisplay: customerPhone.trim(),
-            deliveryAddressOneLine: formatDeliveryAddressOneLine({
-              street,
-              citySector,
-              province,
-            }),
+            deliveryType,
+            deliveryAddressOneLine:
+              deliveryType === "envio"
+                ? formatDeliveryAddressOneLine({
+                    street,
+                    citySector,
+                    province,
+                  })
+                : null,
             deliveryNotes: deliveryNotes.trim() || null,
             lines: items.map((i) => ({
               quantity: i.quantity,

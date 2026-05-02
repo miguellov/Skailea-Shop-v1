@@ -1,5 +1,7 @@
 import { Resend } from "resend"
 import { getInternalAppUrl } from "@/lib/internal-app-url"
+import { RETIRO_LOCATION_FULL } from "@/lib/shipping-copy"
+import type { DeliveryType } from "@/lib/types"
 import { formatPriceDOP } from "@/lib/utils"
 
 const ADMIN_PEDIDOS_URL =
@@ -10,8 +12,9 @@ export type NotifyOrderPayload = {
   customer_name: string
   /** Texto tal como lo escribió el cliente (email legible) */
   customer_phone_display: string
-  /** Dirección multilínea */
-  delivery_address: string
+  delivery_type: DeliveryType
+  /** Dirección multilínea si envío; null si retiro en tienda */
+  delivery_address: string | null
   /** Instrucciones especiales del cliente (opcional) */
   delivery_notes?: string | null
   items: Array<{
@@ -60,6 +63,19 @@ export function buildOrderNotificationHtml(payload: NotifyOrderPayload): string 
     )
     .join("")
 
+  const deliveryLabel =
+    payload.delivery_type === "envio"
+      ? "🚚 Envío a domicilio"
+      : "🏪 Retiro en tienda"
+  const deliveryAddressBlock =
+    payload.delivery_type === "envio" && payload.delivery_address
+      ? `<p style="margin:18px 0 6px;font-size:15px;color:${deep};"><strong>📍 Dirección de envío</strong></p>
+          <p style="margin:0;font-size:14px;color:${deep};white-space:pre-wrap;line-height:1.5;">${escapeHtml(payload.delivery_address.trim())}</p>`
+      : payload.delivery_type === "retiro"
+        ? `<p style="margin:18px 0 6px;font-size:15px;color:${deep};"><strong>📍 Retiro</strong></p>
+          <p style="margin:0;font-size:14px;color:${deep};">${escapeHtml(RETIRO_LOCATION_FULL)}</p>`
+        : ""
+
   const deliveryNotesBlock =
     payload.delivery_notes && payload.delivery_notes.trim().length > 0
       ? `<p style="margin:14px 0 0;font-size:13px;color:${deep};opacity:0.92;">
@@ -92,8 +108,9 @@ export function buildOrderNotificationHtml(payload: NotifyOrderPayload): string 
           <p style="margin:0;font-size:16px;color:${rose};font-weight:600;">${escapeHtml(payload.customer_name)}</p>
           <p style="margin:16px 0 6px;font-size:15px;color:${deep};"><strong>WhatsApp / teléfono</strong></p>
           <p style="margin:0;font-size:15px;color:${deep};">${escapeHtml(payload.customer_phone_display)}</p>
-          <p style="margin:18px 0 6px;font-size:15px;color:${deep};"><strong>📍 Dirección de envío</strong></p>
-          <p style="margin:0;font-size:14px;color:${deep};white-space:pre-wrap;line-height:1.5;">${escapeHtml(payload.delivery_address.trim())}</p>
+          <p style="margin:18px 0 6px;font-size:15px;color:${deep};"><strong>Tipo de entrega</strong></p>
+          <p style="margin:0;font-size:15px;color:${rose};font-weight:600;">${escapeHtml(deliveryLabel)}</p>
+          ${deliveryAddressBlock}
           ${deliveryNotesBlock}
           ${internalNotesBlock}
           <p style="margin:22px 0 10px;font-size:15px;color:${deep};"><strong>Productos</strong></p>

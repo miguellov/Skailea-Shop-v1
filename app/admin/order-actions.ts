@@ -3,6 +3,7 @@
 import { createServiceRoleClient } from "@/lib/supabase-server"
 import { triggerOrderNotificationFetch } from "@/lib/order-notify"
 import type {
+  DeliveryType,
   Order,
   OrderLineItem,
   OrderStatus,
@@ -11,7 +12,8 @@ import type {
 export type SubmitStoreOrderInput = {
   customer_name: string
   customer_phone: string
-  delivery_address: string
+  delivery_type: DeliveryType
+  delivery_address: string | null
   delivery_notes?: string | null
   items: OrderLineItem[]
   total: number
@@ -24,6 +26,11 @@ export type DashboardOrderStats = {
   pendingDispatch: number
 }
 
+function parseDeliveryType(raw: unknown): DeliveryType {
+  const s = String(raw ?? "").trim().toLowerCase()
+  return s === "retiro" ? "retiro" : "envio"
+}
+
 function mapOrderRow(row: Record<string, unknown>): Order {
   const rawDel = row.delivery_address
   const rawDelNotes = row.delivery_notes
@@ -31,6 +38,7 @@ function mapOrderRow(row: Record<string, unknown>): Order {
     id: String(row.id),
     customer_name: String(row.customer_name),
     customer_phone: String(row.customer_phone),
+    delivery_type: parseDeliveryType(row.delivery_type),
     delivery_address:
       rawDel == null || String(rawDel).trim() === ""
         ? null
@@ -69,9 +77,15 @@ export async function submitStoreOrder(
   if (!input.items.length) {
     throw new Error("El pedido no tiene artículos")
   }
-  const deliveryAddr = input.delivery_address.trim()
-  if (!deliveryAddr) {
-    throw new Error("La dirección de envío es obligatoria")
+  const dtype: DeliveryType =
+    input.delivery_type === "retiro" ? "retiro" : "envio"
+  let deliveryAddr: string | null = null
+  if (dtype === "envio") {
+    const trimmed = (input.delivery_address ?? "").trim()
+    if (!trimmed) {
+      throw new Error("La dirección de envío es obligatoria")
+    }
+    deliveryAddr = trimmed
   }
 
   const deliveryNotes =
@@ -80,6 +94,7 @@ export async function submitStoreOrder(
   const { error } = await sb.from("orders").insert({
     customer_name: name,
     customer_phone: phone,
+    delivery_type: dtype,
     delivery_address: deliveryAddr,
     delivery_notes: deliveryNotes,
     items: input.items,
@@ -94,6 +109,7 @@ export async function submitStoreOrder(
     await triggerOrderNotificationFetch({
       customer_name: name,
       customer_phone_display: input.customer_phone.trim(),
+      delivery_type: dtype,
       delivery_address: deliveryAddr,
       delivery_notes: deliveryNotes,
       items: input.items.map((i) => ({
@@ -253,6 +269,7 @@ export async function createOrder(input: {
   const { error } = await sb.from("orders").insert({
     customer_name: input.customer_name.trim(),
     customer_phone: phone,
+    delivery_type: "retiro",
     delivery_address: null,
     delivery_notes: null,
     items,
@@ -266,7 +283,8 @@ export async function createOrder(input: {
     await triggerOrderNotificationFetch({
       customer_name: input.customer_name.trim(),
       customer_phone_display: input.customer_phone.trim(),
-      delivery_address: "Pedido registrado en tienda (sin dirección web)",
+      delivery_type: "retiro",
+      delivery_address: null,
       delivery_notes: null,
       items: items.map((i) => ({
         name: i.name,

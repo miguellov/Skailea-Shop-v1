@@ -222,6 +222,7 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
       onCompleted={async ({
         customerName,
         customerPhone,
+        deliveryType,
         street,
         citySector,
         province,
@@ -238,14 +239,18 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
             line_total: unitPrice,
           },
         ]
-        const deliveryMultiline = formatDeliveryAddressMultiline({
-          street,
-          citySector,
-          province,
-        })
+        const deliveryMultiline =
+          deliveryType === "envio"
+            ? formatDeliveryAddressMultiline({
+                street,
+                citySector,
+                province,
+              })
+            : null
         await submitStoreOrder({
           customer_name: customerName,
           customer_phone: customerPhone,
+          delivery_type: deliveryType,
           delivery_address: deliveryMultiline,
           delivery_notes: deliveryNotes.trim() || null,
           items,
@@ -258,11 +263,15 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
         const msg = buildProductOrderWhatsAppMessage({
           customerName,
           customerPhoneDisplay: customerPhone.trim(),
-          deliveryAddressOneLine: formatDeliveryAddressOneLine({
-            street,
-            citySector,
-            province,
-          }),
+          deliveryType,
+          deliveryAddressOneLine:
+            deliveryType === "envio"
+              ? formatDeliveryAddressOneLine({
+                  street,
+                  citySector,
+                  province,
+                })
+              : null,
           deliveryNotes: deliveryNotes.trim() || null,
           productName: product.name,
           priceLabel: priceStr,

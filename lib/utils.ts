@@ -1,4 +1,7 @@
-import { SHIPPING_WHATSAPP_CLOSING } from "@/lib/shipping-copy"
+import {
+  RETIRO_LOCATION_WHATSAPP,
+} from "@/lib/shipping-copy"
+import type { DeliveryType } from "@/lib/types"
 
 export function formatPriceDOP(value: number): string {
   return new Intl.NumberFormat("es-DO", {
@@ -60,7 +63,8 @@ export function buildCartWhatsAppMessage(lines: CartLineInput[]): string {
 export function buildProductOrderWhatsAppMessage(params: {
   customerName: string
   customerPhoneDisplay: string
-  deliveryAddressOneLine: string
+  deliveryType: DeliveryType
+  deliveryAddressOneLine: string | null
   deliveryNotes?: string | null
   productName: string
   priceLabel: string
@@ -70,8 +74,17 @@ export function buildProductOrderWhatsAppMessage(params: {
 }): string {
   let msg = `Hola Skailea Shop! 👋
 Mi nombre es ${params.customerName}
-Me interesa: ${params.productName} - ${params.priceLabel}
-📍 Dirección: ${params.deliveryAddressOneLine}
+Me interesa: ${params.productName} - ${params.priceLabel}`
+  if (params.deliveryType === "envio") {
+    msg += `
+🚚 Tipo de entrega: Envío a domicilio
+📍 Dirección: ${params.deliveryAddressOneLine ?? ""}`
+  } else {
+    msg += `
+🏪 Tipo de entrega: Retiro en tienda
+📍 ${RETIRO_LOCATION_WHATSAPP}`
+  }
+  msg += `
 📱 Mi WhatsApp: ${params.customerPhoneDisplay}`
   const note = params.deliveryNotes?.trim()
   if (note) {
@@ -84,7 +97,9 @@ Me interesa: ${params.productName} - ${params.priceLabel}
   ) {
     msg += `\n\nPrecio por mayor: ${params.mayorPriceLabel} (mín. ${params.mayorMin} uds.)`
   }
-  msg += `\n\n${SHIPPING_WHATSAPP_CLOSING}`
+  if (params.deliveryType === "envio") {
+    msg += `\n\n⚠️ Entiendo que el envío tiene costo adicional`
+  }
   return msg
 }
 
@@ -92,7 +107,8 @@ Me interesa: ${params.productName} - ${params.priceLabel}
 export function buildCartOrderWhatsAppMessage(params: {
   customerName: string
   customerPhoneDisplay: string
-  deliveryAddressOneLine: string
+  deliveryType: DeliveryType
+  deliveryAddressOneLine: string | null
   deliveryNotes?: string | null
   lines: Array<{ quantity: number; name: string; lineLabel: string }>
   totalLabel: string
@@ -107,8 +123,17 @@ Mi nombre es ${params.customerName}
 Pedido:
 ${body}
 
-Total productos: ${params.totalLabel}
-📍 Dirección: ${params.deliveryAddressOneLine}
+Total productos: ${params.totalLabel}`
+  if (params.deliveryType === "envio") {
+    msg += `
+🚚 Tipo de entrega: Envío a domicilio
+📍 Dirección: ${params.deliveryAddressOneLine ?? ""}`
+  } else {
+    msg += `
+🏪 Tipo de entrega: Retiro en tienda
+📍 ${RETIRO_LOCATION_WHATSAPP}`
+  }
+  msg += `
 📱 Mi WhatsApp: ${params.customerPhoneDisplay}`
   const note = params.deliveryNotes?.trim()
   if (note) {
@@ -117,7 +142,9 @@ Total productos: ${params.totalLabel}
   if (params.wantsMayor) {
     msg += `\n\n(Solicito precios por mayor donde aplique.)`
   }
-  msg += `\n\n${SHIPPING_WHATSAPP_CLOSING}`
+  if (params.deliveryType === "envio") {
+    msg += `\n\n⚠️ Entiendo que el envío tiene costo adicional`
+  }
   return msg
 }
 

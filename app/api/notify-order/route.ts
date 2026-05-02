@@ -3,6 +3,7 @@ import {
   type NotifyOrderPayload,
   sendOrderNotificationEmail,
 } from "@/lib/order-notify"
+import type { DeliveryType } from "@/lib/types"
 
 export const runtime = "nodejs"
 
@@ -11,7 +12,12 @@ function isPayload(v: unknown): v is NotifyOrderPayload {
   const o = v as Record<string, unknown>
   if (typeof o.customer_name !== "string") return false
   if (typeof o.customer_phone_display !== "string") return false
-  if (typeof o.delivery_address !== "string") return false
+  const dtype = o.delivery_type as DeliveryType | undefined
+  if (dtype !== "envio" && dtype !== "retiro") return false
+  const addr = o.delivery_address
+  if (dtype === "envio") {
+    if (typeof addr !== "string" || !addr.trim()) return false
+  } else if (addr != null && typeof addr !== "string") return false
   if (!Array.isArray(o.items)) return false
   if (typeof o.total !== "number") return false
   for (const it of o.items) {

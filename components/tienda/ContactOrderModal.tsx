@@ -2,18 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react"
 import type { CartLine } from "@/components/tienda/CartContext"
-import type { ProductPublic } from "@/lib/types"
+import type { DeliveryType, ProductPublic } from "@/lib/types"
 import {
   loadCustomerContact,
   saveCustomerContact,
   type StoredCustomerContact,
 } from "@/lib/contact-prefs"
-import { SHIPPING_COST_DISCLAIMER_MODAL } from "@/lib/shipping-copy"
+import {
+  RETIRO_LOCATION_FULL,
+  RETIRO_MODAL_SUBTEXT,
+  SHIPPING_COST_DISCLAIMER_ENVIO_MODAL,
+} from "@/lib/shipping-copy"
 import { formatRdCartMoney } from "@/lib/utils"
 
 export type ContactOrderCompletion = {
   customerName: string
   customerPhone: string
+  deliveryType: DeliveryType
   street: string
   citySector: string
   province: string
@@ -30,6 +35,9 @@ type Props = {
   onCompleted: (payload: ContactOrderCompletion) => Promise<void>
 }
 
+const TYPE_BTN_BASE =
+  "flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-3 text-center text-sm font-semibold leading-snug transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold)] focus-visible:ring-offset-2"
+
 export function ContactOrderModal({
   open,
   onClose,
@@ -40,6 +48,7 @@ export function ContactOrderModal({
 }: Props) {
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>("envio")
   const [street, setStreet] = useState("")
   const [citySector, setCitySector] = useState("")
   const [province, setProvince] = useState("")
@@ -55,6 +64,7 @@ export function ContactOrderModal({
     const saved = loadCustomerContact()
     setName(saved?.name ?? "")
     setPhone(saved?.phone ?? "")
+    setDeliveryType("envio")
     setStreet(saved?.street ?? "")
     setCitySector(saved?.citySector ?? "")
     setProvince(saved?.province ?? "")
@@ -104,12 +114,14 @@ export function ContactOrderModal({
     const st = street.trim()
     const cs = citySector.trim()
     const pr = province.trim()
-    if (!n || !p || !st || !cs || !pr) return
+    if (!n || !p) return
+    if (deliveryType === "envio" && (!st || !cs || !pr)) return
     setSending(true)
     try {
       await onCompleted({
         customerName: n,
         customerPhone: p,
+        deliveryType,
         street: st,
         citySector: cs,
         province: pr,
@@ -136,6 +148,11 @@ export function ContactOrderModal({
   const inputClass =
     "mt-1.5 w-full rounded-xl border border-skailea-blush/70 bg-white px-3.5 py-3 text-base text-[var(--deep)] outline-none ring-[var(--gold)]/15 transition placeholder:text-skailea-charcoal/40 focus:border-skailea-gold/55 focus:ring-2"
 
+  const selectedType =
+    "border-skailea-gold/70 bg-gradient-to-br from-skailea-blush/45 to-white shadow-inner shadow-skailea-deep/5 text-[var(--deep)]"
+  const idleType =
+    "border-skailea-blush/60 bg-white/90 text-skailea-charcoal/90 hover:border-skailea-gold/40 hover:bg-skailea-blush/15"
+
   return (
     <div
       className="fixed inset-0 z-[80] flex items-end justify-center sm:items-center sm:p-4"
@@ -155,7 +172,7 @@ export function ContactOrderModal({
             id="contact-order-title"
             className="font-serif text-xl font-semibold leading-tight text-[var(--deep)] sm:text-2xl"
           >
-            ¿A dónde enviamos tu pedido? 🛍️
+            ¿Cómo recibes tu pedido? 🛍️
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-skailea-charcoal/80">
             Completa tus datos; abriremos WhatsApp con el resumen del pedido.
@@ -190,48 +207,87 @@ export function ContactOrderModal({
               />
             </label>
 
-            <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-[var(--deep)]">
-              Dirección de envío
-            </p>
-            <label className="block text-sm font-semibold text-[var(--deep)]">
-              Calle y número
-              <input
-                required
-                autoComplete="street-address"
-                className={inputClass}
-                value={street}
-                onChange={(e) => setStreet(e.target.value)}
-                placeholder="Ej. Calle Duarte 12"
-              />
-            </label>
-            <label className="block text-sm font-semibold text-[var(--deep)]">
-              Ciudad / Sector
-              <input
-                required
-                autoComplete="address-level2"
-                className={inputClass}
-                value={citySector}
-                onChange={(e) => setCitySector(e.target.value)}
-                placeholder="Ej. Sosúa, Centro"
-              />
-            </label>
-            <label className="block text-sm font-semibold text-[var(--deep)]">
-              Provincia
-              <input
-                required
-                autoComplete="address-level1"
-                className={inputClass}
-                value={province}
-                onChange={(e) => setProvince(e.target.value)}
-                placeholder="Ej. Puerto Plata"
-              />
-            </label>
-
-            <div className="rounded-xl border border-skailea-gold/50 bg-skailea-blush/25 px-3.5 py-3 text-sm leading-snug">
-              <p className="font-medium text-skailea-gold">
-                {SHIPPING_COST_DISCLAIMER_MODAL}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--deep)]">
+                Tipo de entrega
               </p>
+              <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  aria-pressed={deliveryType === "envio"}
+                  onClick={() => setDeliveryType("envio")}
+                  className={`${TYPE_BTN_BASE} ${deliveryType === "envio" ? selectedType : idleType}`}
+                >
+                  🚚 Envío a domicilio
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={deliveryType === "retiro"}
+                  onClick={() => setDeliveryType("retiro")}
+                  className={`${TYPE_BTN_BASE} ${deliveryType === "retiro" ? selectedType : idleType}`}
+                >
+                  🏪 Retirar en tienda
+                </button>
+              </div>
             </div>
+
+            {deliveryType === "envio" && (
+              <>
+                <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-[var(--deep)]">
+                  Dirección de envío
+                </p>
+                <label className="block text-sm font-semibold text-[var(--deep)]">
+                  Calle y número
+                  <input
+                    required={deliveryType === "envio"}
+                    autoComplete="street-address"
+                    className={inputClass}
+                    value={street}
+                    onChange={(e) => setStreet(e.target.value)}
+                    placeholder="Ej. Calle Duarte 12"
+                  />
+                </label>
+                <label className="block text-sm font-semibold text-[var(--deep)]">
+                  Ciudad / Sector
+                  <input
+                    required={deliveryType === "envio"}
+                    autoComplete="address-level2"
+                    className={inputClass}
+                    value={citySector}
+                    onChange={(e) => setCitySector(e.target.value)}
+                    placeholder="Ej. Sosúa, Centro"
+                  />
+                </label>
+                <label className="block text-sm font-semibold text-[var(--deep)]">
+                  Provincia
+                  <input
+                    required={deliveryType === "envio"}
+                    autoComplete="address-level1"
+                    className={inputClass}
+                    value={province}
+                    onChange={(e) => setProvince(e.target.value)}
+                    placeholder="Ej. Puerto Plata"
+                  />
+                </label>
+
+                <div className="rounded-xl border border-skailea-gold/50 bg-skailea-blush/25 px-3.5 py-3 text-sm leading-snug">
+                  <p className="font-medium text-[var(--gold)]">
+                    {SHIPPING_COST_DISCLAIMER_ENVIO_MODAL}
+                  </p>
+                </div>
+              </>
+            )}
+
+            {deliveryType === "retiro" && (
+              <div className="rounded-xl border border-skailea-gold/40 bg-white/90 px-3.5 py-3 text-sm leading-relaxed text-[var(--deep)] shadow-sm">
+                <p className="font-semibold">
+                  📍 {RETIRO_LOCATION_FULL}
+                </p>
+                <p className="mt-2 text-skailea-charcoal/85">
+                  {RETIRO_MODAL_SUBTEXT}
+                </p>
+              </div>
+            )}
 
             <label className="block text-sm font-semibold text-[var(--deep)]">
               ¿Alguna instrucción especial?{" "}

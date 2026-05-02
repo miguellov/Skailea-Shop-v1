@@ -40,6 +40,9 @@ export type ProductPublic = Omit<Product, "active"> & {
 
 export type OrderStatus = "nuevo" | "preparando" | "despachado" | "entregado"
 
+/** Cómo recibe el pedido el cliente (columna `delivery_type` en Supabase) */
+export type DeliveryType = "envio" | "retiro"
+
 export type OrderLineItem = {
   product_id: string
   name: string
@@ -53,6 +56,7 @@ export type Order = {
   id: string
   customer_name: string
   customer_phone: string
+  delivery_type: DeliveryType
   /** Dirección de envío (texto multilínea: calle, ciudad/sector, provincia) */
   delivery_address: string | null
   /** Instrucciones especiales del cliente para la entrega */

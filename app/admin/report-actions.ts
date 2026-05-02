@@ -8,7 +8,12 @@ import {
 } from "@/lib/report-ranges"
 
 export type { ReportPeriod } from "@/lib/report-ranges"
-import type { Order, OrderLineItem, OrderStatus } from "@/lib/types"
+import type {
+  DeliveryType,
+  Order,
+  OrderLineItem,
+  OrderStatus,
+} from "@/lib/types"
 
 const ORDER_STATUSES: OrderStatus[] = [
   "nuevo",
@@ -16,6 +21,11 @@ const ORDER_STATUSES: OrderStatus[] = [
   "despachado",
   "entregado",
 ]
+
+function parseDeliveryType(raw: unknown): DeliveryType {
+  const s = String(raw ?? "").trim().toLowerCase()
+  return s === "retiro" ? "retiro" : "envio"
+}
 
 function mapOrder(row: Record<string, unknown>): Order {
   const itemsRaw = row.items
@@ -40,6 +50,7 @@ function mapOrder(row: Record<string, unknown>): Order {
     id: String(row.id),
     customer_name: String(row.customer_name ?? ""),
     customer_phone: String(row.customer_phone ?? ""),
+    delivery_type: parseDeliveryType(row.delivery_type),
     delivery_address:
       row.delivery_address == null ? null : String(row.delivery_address),
     delivery_notes:
