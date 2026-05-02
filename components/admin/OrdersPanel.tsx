@@ -71,6 +71,10 @@ export function OrdersPanel({ initialOrders }: Props) {
   }, [initialOrders, tab])
 
   async function onAdvance(o: Order) {
+    console.log("[OrdersPanel] Avanzar estado — click", {
+      orderId: o.id,
+      statusActual: o.status,
+    })
     try {
       await advanceOrderStatus(o.id, o.status)
       router.refresh()
@@ -249,7 +253,11 @@ export function OrdersPanel({ initialOrders }: Props) {
                     className="mt-1 w-full rounded-xl border border-skailea-blush/50 bg-skailea-cream/50 px-3 py-2 text-sm text-skailea-deep outline-none focus:ring-2 focus:ring-skailea-gold/50"
                     onBlur={(e) => {
                       const v = e.target.value
-                      if (v !== (o.notes ?? "")) void onSaveNotes(o.id, v)
+                      if (v !== (o.notes ?? "")) {
+                        /* Deferir: si el foco va al botón «→ Entregado», el refresh
+                           del blur no debe desmontar la fila antes del click. */
+                        setTimeout(() => void onSaveNotes(o.id, v), 0)
+                      }
                     }}
                     placeholder="Notas internas…"
                   />
@@ -257,7 +265,7 @@ export function OrdersPanel({ initialOrders }: Props) {
 
                 <OrderInvoiceControls order={o} />
 
-                <div className="mt-3 flex flex-wrap items-center gap-2">
+                <div className="relative z-10 mt-3 flex flex-wrap items-center gap-2">
                   {nextLabel && (
                     <button
                       type="button"

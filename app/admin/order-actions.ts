@@ -278,7 +278,7 @@ export async function advanceOrderStatus(
   const next = STATUS_CHAIN[current]
   if (!next) throw new Error("El pedido ya está entregado")
   const sb = createServiceRoleClient()
-  const { error } = await sb
+  const { data, error } = await sb
     .from("orders")
     .update({
       status: next,
@@ -286,7 +286,14 @@ export async function advanceOrderStatus(
     })
     .eq("id", id)
     .eq("status", current)
+    .select("id")
   if (error) throw new Error(error.message)
+  if (!data?.length) {
+    throw new Error(
+      "No se actualizó el estado: puede que ya haya cambiado. Recarga la página."
+    )
+  }
+  revalidatePath("/admin/dashboard/pedidos")
 }
 
 export async function updateOrderNotes(id: string, notes: string): Promise<void> {
