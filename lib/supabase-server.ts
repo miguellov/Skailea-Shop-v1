@@ -1,5 +1,36 @@
 import { createClient } from "@supabase/supabase-js"
 
+/** Decodifica el payload de un JWT (solo para inspección local, sin verificar firma). */
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".")
+    if (parts.length < 2) return null
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/")
+    const pad = base64.length % 4
+    const padded = pad ? base64 + "=".repeat(4 - pad) : base64
+    const json = atob(padded)
+    return JSON.parse(json) as Record<string, unknown>
+  } catch {
+    return null
+  }
+}
+
+let warnedAnonAsServiceRole = false
+
+function warnIfAnonKeyUsedAsServiceRole(secret: string): void {
+  if (warnedAnonAsServiceRole) return
+  const payload = decodeJwtPayload(secret)
+  const role = typeof payload?.role === "string" ? payload.role : ""
+  if (role === "anon") {
+    warnedAnonAsServiceRole = true
+    console.error(
+      "[supabase-server] La clave en SUPABASE_SECRET_KEY / SUPABASE_SERVICE_ROLE_KEY es la clave ANÓNIMA (JWT role=anon). " +
+        "Para createServiceRoleClient debe ser la service_role: Supabase → Project Settings → API → pestaña Legacy → copiar «service_role». " +
+        "En Vercel, actualiza SUPABASE_SECRET_KEY y haz redeploy."
+    )
+  }
+}
+
 /**
  * Cliente con clave anónima (`anon`). Respeta RLS; usar en server actions
  * invocados desde la tienda pública (p. ej. insertar pedidos).
@@ -44,6 +75,8 @@ export function createServiceRoleClient() {
       "Faltan NEXT_PUBLIC_SUPABASE_URL o SUPABASE_SECRET_KEY (o SUPABASE_SERVICE_ROLE_KEY) en .env.local"
     )
   }
+
+  warnIfAnonKeyUsedAsServiceRole(secret)
 
   return createClient(url, secret, {
     auth: {
