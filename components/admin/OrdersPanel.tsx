@@ -94,12 +94,12 @@ export function OrdersPanel({ initialOrders }: Props) {
 
   async function onDelete(id: string) {
     if (!window.confirm("¿Eliminar este pedido?")) return
-    try {
-      await deleteOrder(id)
-      router.refresh()
-    } catch (e) {
-      window.alert(e instanceof Error ? e.message : "Error")
+    const result = await deleteOrder(id)
+    if (!result.success) {
+      window.alert("Error: " + result.error)
+      return
     }
+    router.refresh()
   }
 
   function customerNotifyHref(o: Order): string | null {

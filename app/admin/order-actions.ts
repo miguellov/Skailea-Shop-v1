@@ -31,6 +31,10 @@ export type MarkOrderAsPaidResult =
   | { success: true }
   | { success: false; error: string }
 
+export type DeleteOrderResult =
+  | { success: true }
+  | { success: false; error: string }
+
 export type DashboardOrderStats = {
   newOrdersToday: number
   soldTodayDop: number
@@ -308,10 +312,29 @@ export async function updateOrderNotes(id: string, notes: string): Promise<void>
   if (error) throw new Error(error.message)
 }
 
-export async function deleteOrder(id: string): Promise<void> {
-  const sb = createServiceRoleClient()
-  const { error } = await sb.from("orders").delete().eq("id", id)
-  if (error) throw new Error(error.message)
+export async function deleteOrder(id: string): Promise<DeleteOrderResult> {
+  try {
+    const supabase = createServiceRoleClient()
+    const { data, error } = await supabase
+      .from("orders")
+      .delete()
+      .eq("id", id)
+      .select("id")
+
+    if (error) throw error
+    if (!data?.length) {
+      return {
+        success: false,
+        error: "No se encontró el pedido o ya fue eliminado.",
+      }
+    }
+
+    revalidatePath("/admin/dashboard/pedidos")
+    return { success: true }
+  } catch (e) {
+    console.error("Error eliminando pedido:", e)
+    return { success: false, error: String(e) }
+  }
 }
 
 async function allocateNextInvoiceNumber(sb: ReturnType<

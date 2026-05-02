@@ -26,7 +26,7 @@ CREATE POLICY "insertar pedidos"
   ON orders FOR INSERT
   WITH CHECK (true);
 
--- Service role: gestión completa (SELECT/UPDATE/DELETE + INSERT si hiciera falta)
+-- Service role: gestión completa — FOR ALL incluye SELECT, INSERT, UPDATE y DELETE
 CREATE POLICY "admin gestiona pedidos"
   ON orders FOR ALL
   TO service_role
