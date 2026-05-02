@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { SITE_PUBLIC_URL } from "@/lib/site";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -14,12 +15,38 @@ const dmSans = DM_Sans({
   display: "swap",
 });
 
+const ogDescription =
+  "Belleza y fragancias en Sosúa, Puerto Plata, RD. BBW, Victoria's Secret y más.";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_PUBLIC_URL),
   title: "Skailea Shop | Tu Aroma Deja Huella",
   description:
     "Tienda de belleza y fragancias en Sosúa, Puerto Plata, República Dominicana. BBW, Victoria's Secret, Perfumes Árabes y más. Pedidos por WhatsApp.",
   keywords:
     "skailea shop, perfumes, BBW, Victoria Secret, Sosúa, Puerto Plata, República Dominicana",
+  openGraph: {
+    type: "website",
+    locale: "es_DO",
+    url: SITE_PUBLIC_URL,
+    siteName: "Skailea Shop",
+    title: "Skailea Shop | Tu Aroma Deja Huella",
+    description: ogDescription,
+    images: [
+      {
+        url: "/logo.png",
+        width: 512,
+        height: 512,
+        alt: "Skailea Shop",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Skailea Shop | Tu Aroma Deja Huella",
+    description: ogDescription,
+    images: ["/logo.png"],
+  },
 };
 
 export default function RootLayout({

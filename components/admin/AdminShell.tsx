@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import type { ReactNode } from "react"
 import { ADMIN_SESSION_KEY } from "@/lib/admin-session"
+import { SITE_PUBLIC_URL } from "@/lib/site"
 
 const nav = [
   { href: "/admin/dashboard", label: "Resumen" },
@@ -60,12 +61,14 @@ export function AdminShell({
                 </Link>
               )
             })}
-            <Link
-              href="/"
+            <a
+              href={SITE_PUBLIC_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="rounded-full px-3 py-1.5 text-sm text-skailea-cream/75 hover:bg-skailea-cream/10"
             >
               Ver tienda
-            </Link>
+            </a>
             <button
               type="button"
               onClick={logout}
