@@ -43,6 +43,16 @@ const empty: ProductFormValues = {
 
 const ACCEPT = "image/jpeg,image/png,image/webp"
 
+/** Upload unsigned desde el navegador (preset en Cloudinary Dashboard → Unsigned). */
+function cloudinaryUnsignedUploadUrl(): string {
+  const cloud =
+    process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim() || "dmuutld2a"
+  return `https://api.cloudinary.com/v1_1/${cloud}/image/upload`
+}
+
+const CLOUDINARY_UPLOAD_PRESET =
+  process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET?.trim() || "skailea_products"
+
 function photosFromProduct(p: Product | null): string[] {
   if (!p) return []
   const raw = Array.isArray(p.image_urls) ? p.image_urls : []
@@ -151,27 +161,31 @@ export function ProductForm({
     setUploading(true)
     setUploadError(null)
     try {
-      const fd = new FormData()
-      fd.set("file", pendingFile)
-      const res = await fetch("/admin/api/upload", {
+      const formData = new FormData()
+      formData.append("file", pendingFile)
+      formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET)
+
+      const res = await fetch(cloudinaryUnsignedUploadUrl(), {
         method: "POST",
-        body: fd,
+        body: formData,
       })
-      const raw = await res.text()
-      let data: { secure_url?: string; error?: string }
-      try {
-        data = JSON.parse(raw) as { secure_url?: string; error?: string }
-      } catch {
-        console.error("[ProductForm] Upload respuesta no JSON:", raw.slice(0, 400))
-        throw new Error(
-          res.ok
-            ? "Respuesta inválida del servidor al subir"
-            : `Error ${res.status} al subir`
-        )
+
+      const data = (await res.json()) as {
+        secure_url?: string
+        error?: { message?: string } | string
       }
+
       if (!res.ok) {
-        throw new Error(data.error || "No se pudo subir la imagen")
+        const errMsg =
+          typeof data.error === "object" && data.error?.message
+            ? data.error.message
+            : typeof data.error === "string"
+              ? data.error
+              : `Cloudinary (${res.status})`
+        console.error("[ProductForm] Cloudinary error:", data)
+        throw new Error(errMsg)
       }
+
       const uploadedUrl = data.secure_url?.trim()
       if (!uploadedUrl) {
         console.error("[ProductForm] JSON sin secure_url:", data)
