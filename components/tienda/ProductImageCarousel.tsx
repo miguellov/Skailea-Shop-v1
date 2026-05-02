@@ -12,6 +12,8 @@ type Props = {
   className?: string
   /** Image classes (zoom on hover lives on product card group) */
   imageClassName?: string
+  /** Abre visor pantalla completa (modal); recibe índice actual */
+  onRequestLightbox?: (index: number) => void
 }
 
 export function ProductImageCarousel({
@@ -19,6 +21,7 @@ export function ProductImageCarousel({
   alt,
   className = "",
   imageClassName = "",
+  onRequestLightbox,
 }: Props) {
   const safe = urls.map((u) => u.trim()).filter(Boolean)
   const galleryKey = safe.join("|")
@@ -65,6 +68,22 @@ export function ProductImageCarousel({
           className={`object-cover transition duration-500 ease-out group-hover:scale-[1.04] ${imageClassName}`}
           sizes="(max-width: 767px) 50vw, (max-width: 1279px) 33vw, 25vw"
         />
+        {onRequestLightbox && (
+          <>
+            <button
+              type="button"
+              onClick={() => onRequestLightbox(0)}
+              className="absolute inset-0 z-[4] cursor-pointer bg-transparent"
+              aria-label="Ver imagen a pantalla completa"
+            />
+            <span
+              className="pointer-events-none absolute bottom-3 right-3 z-[5] flex h-8 w-8 items-center justify-center rounded-full border border-skailea-gold/45 bg-skailea-deep/75 text-sm text-skailea-cream shadow-md backdrop-blur-[2px]"
+              aria-hidden
+            >
+              🔍
+            </span>
+          </>
+        )}
       </div>
     )
   }
@@ -88,7 +107,7 @@ export function ProductImageCarousel({
           sizes="(max-width: 767px) 50vw, (max-width: 1279px) 33vw, 25vw"
         />
       ))}
-      <div className="absolute inset-x-0 bottom-2.5 z-[2] flex justify-center gap-2">
+      <div className="absolute inset-x-0 bottom-2.5 z-[6] flex justify-center gap-2">
         {safe.map((_, i) => (
           <button
             key={i}
@@ -108,6 +127,22 @@ export function ProductImageCarousel({
           />
         ))}
       </div>
+      {onRequestLightbox && (
+        <>
+          <button
+            type="button"
+            onClick={() => onRequestLightbox(index)}
+            className="absolute inset-0 z-[4] cursor-pointer bg-transparent"
+            aria-label="Ver imagen a pantalla completa"
+          />
+          <span
+            className="pointer-events-none absolute bottom-12 right-3 z-[5] flex h-8 w-8 items-center justify-center rounded-full border border-skailea-gold/45 bg-skailea-deep/75 text-sm text-skailea-cream shadow-md backdrop-blur-[2px] sm:bottom-14 sm:right-4"
+            aria-hidden
+          >
+            🔍
+          </span>
+        </>
+      )}
     </div>
   )
 }

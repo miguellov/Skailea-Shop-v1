@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useCart } from "@/components/tienda/CartContext"
 import { ProductImageCarousel } from "@/components/tienda/ProductImageCarousel"
+import { ProductImageLightbox } from "@/components/tienda/ProductImageLightbox"
 import type { ProductPublic } from "@/lib/types"
 import {
   formatPriceDOP,
@@ -32,11 +33,23 @@ type Props = {
 
 export function ProductModal({ product, onClose, whatsappDigits }: Props) {
   const { addItem, openDrawer } = useCart()
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
+
+  useEffect(() => {
+    setLightboxOpen(false)
+  }, [product?.id])
 
   useEffect(() => {
     if (!product) return
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose()
+      if (e.key !== "Escape") return
+      if (lightboxOpen) {
+        setLightboxOpen(false)
+        e.preventDefault()
+        return
+      }
+      onClose()
     }
     window.addEventListener("keydown", onKey)
     const prev = document.body.style.overflow
@@ -45,7 +58,7 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
       window.removeEventListener("keydown", onKey)
       document.body.style.overflow = prev
     }
-  }, [product, onClose])
+  }, [product, onClose, lightboxOpen])
 
   if (!product) return null
 
@@ -60,6 +73,7 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
     : null
 
   return (
+    <>
     <div
       className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
       role="dialog"
@@ -79,6 +93,10 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
             alt={product.name}
             className="h-full min-h-[200px]"
             imageClassName="object-cover"
+            onRequestLightbox={(i) => {
+              setLightboxIndex(i)
+              setLightboxOpen(true)
+            }}
           />
           {out && (
             <span className="pointer-events-none absolute left-3 top-3 z-[4] rounded-full border border-white/25 bg-skailea-deep/88 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-skailea-cream shadow-md backdrop-blur-[2px] sm:text-xs">
@@ -182,5 +200,14 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
         </div>
       </div>
     </div>
+
+    <ProductImageLightbox
+      open={lightboxOpen}
+      onClose={() => setLightboxOpen(false)}
+      urls={gallery}
+      initialIndex={lightboxIndex}
+      alt={product.name}
+    />
+    </>
   )
 }
