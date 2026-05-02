@@ -174,6 +174,16 @@ export function OrdersPanel({ initialOrders }: Props) {
                   <div>
                     <p className="font-semibold text-skailea-deep">{o.customer_name}</p>
                     <p className="text-sm text-skailea-rose">{o.customer_phone}</p>
+                    {o.delivery_address && (
+                      <p className="mt-2 max-w-md whitespace-pre-wrap text-sm leading-snug text-skailea-deep">
+                        📍 {o.delivery_address}
+                      </p>
+                    )}
+                    {o.delivery_notes && (
+                      <p className="mt-1 text-xs text-skailea-charcoal/80">
+                        📝 {o.delivery_notes}
+                      </p>
+                    )}
                     <p className="mt-1 text-xs text-skailea-charcoal/70">
                       {new Date(o.created_at).toLocaleString("es-DO", {
                         dateStyle: "medium",

@@ -79,6 +79,24 @@ export function OrderDetailModal({ order, onClose }: Props) {
           <div className="rounded-xl border border-skailea-blush/40 bg-white p-3">
             <p className="font-semibold text-skailea-deep">{order.customer_name}</p>
             <p className="text-sm text-skailea-rose">{order.customer_phone}</p>
+            {order.delivery_address && (
+              <div className="mt-3 rounded-lg border border-skailea-gold/35 bg-skailea-cream/80 px-3 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-skailea-gold">
+                  Dirección de envío
+                </p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-skailea-deep">
+                  📍 {order.delivery_address}
+                </p>
+              </div>
+            )}
+            {order.delivery_notes && (
+              <p className="mt-2 text-sm text-skailea-charcoal/85">
+                <span className="font-semibold text-skailea-deep">
+                  Instrucciones del cliente:{" "}
+                </span>
+                {order.delivery_notes}
+              </p>
+            )}
             <p className="mt-2 text-xs text-skailea-charcoal/75">
               Creado:{" "}
               {new Date(order.created_at).toLocaleString("es-DO", {
@@ -184,7 +202,7 @@ export function OrderDetailModal({ order, onClose }: Props) {
           </ol>
 
           <h3 className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-skailea-gold">
-            Notas de la vendedora
+            Notas internas / sistema
           </h3>
           <div className="mt-2 rounded-xl border border-skailea-blush/40 bg-white px-3 py-3 text-sm text-skailea-deep">
             {order.notes?.trim() ? order.notes : (

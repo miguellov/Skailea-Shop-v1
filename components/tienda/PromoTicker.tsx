@@ -2,7 +2,7 @@
  * Texto del banner promocional (ticker). Editar aquí cuando quieras cambiar el mensaje.
  */
 export const PROMO_BANNER_TICKER_TEXT =
-  "✨ Envíos a todo el país · 🎁 Precio especial por mayor · 💛 Productos 100% originales · 📦 Haz tu pedido por WhatsApp"
+  "🚚 Envío a domicilio disponible · Costo según zona · ✨ Envíos a todo el país · 🎁 Precio especial por mayor · 💛 Productos 100% originales · 📦 Haz tu pedido por WhatsApp"
 
 export function PromoTicker() {
   const text = PROMO_BANNER_TICKER_TEXT

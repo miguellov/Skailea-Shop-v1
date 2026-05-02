@@ -6,8 +6,11 @@ import { useCart } from "@/components/tienda/CartContext"
 import { ContactOrderModal } from "@/components/tienda/ContactOrderModal"
 import { ProductImageCarousel } from "@/components/tienda/ProductImageCarousel"
 import { ProductImageLightbox } from "@/components/tienda/ProductImageLightbox"
-import { saveCustomerContact } from "@/lib/contact-prefs"
 import type { OrderLineItem, ProductPublic } from "@/lib/types"
+import {
+  formatDeliveryAddressMultiline,
+  formatDeliveryAddressOneLine,
+} from "@/lib/delivery-format"
 import {
   buildProductOrderWhatsAppMessage,
   formatPriceDOP,
@@ -219,6 +222,10 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
       onCompleted={async ({
         customerName,
         customerPhone,
+        street,
+        citySector,
+        province,
+        deliveryNotes,
         wantsMayor,
       }) => {
         const unitPrice = wantsMayor ? product.price_mayor : product.price
@@ -231,9 +238,16 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
             line_total: unitPrice,
           },
         ]
+        const deliveryMultiline = formatDeliveryAddressMultiline({
+          street,
+          citySector,
+          province,
+        })
         await submitStoreOrder({
           customer_name: customerName,
           customer_phone: customerPhone,
+          delivery_address: deliveryMultiline,
+          delivery_notes: deliveryNotes.trim() || null,
           items,
           total: unitPrice,
           notes: wantsMayor
@@ -244,6 +258,12 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
         const msg = buildProductOrderWhatsAppMessage({
           customerName,
           customerPhoneDisplay: customerPhone.trim(),
+          deliveryAddressOneLine: formatDeliveryAddressOneLine({
+            street,
+            citySector,
+            province,
+          }),
+          deliveryNotes: deliveryNotes.trim() || null,
           productName: product.name,
           priceLabel: priceStr,
           wantsMayor,
@@ -253,10 +273,6 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
           mayorMin: wantsMayor ? product.mayor_min : undefined,
         })
         const href = whatsappUrl(whatsappDigits, msg)
-        saveCustomerContact({
-          name: customerName,
-          phone: customerPhone,
-        })
         if (href && href !== "#") {
           window.open(href, "_blank", "noopener,noreferrer")
         }

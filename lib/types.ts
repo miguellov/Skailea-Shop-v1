@@ -53,9 +53,14 @@ export type Order = {
   id: string
   customer_name: string
   customer_phone: string
+  /** Dirección de envío (texto multilínea: calle, ciudad/sector, provincia) */
+  delivery_address: string | null
+  /** Instrucciones especiales del cliente para la entrega */
+  delivery_notes: string | null
   items: OrderLineItem[]
   total: number
   status: OrderStatus
+  /** Notas internas / sistema (p. ej. precio por mayor) */
   notes: string | null
   created_at: string
   updated_at: string

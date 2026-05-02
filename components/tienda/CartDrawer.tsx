@@ -8,9 +8,13 @@ import {
   useCart,
 } from "@/components/tienda/CartContext"
 import { ContactOrderModal } from "@/components/tienda/ContactOrderModal"
-import { saveCustomerContact } from "@/lib/contact-prefs"
 import type { OrderLineItem } from "@/lib/types"
+import {
+  formatDeliveryAddressMultiline,
+  formatDeliveryAddressOneLine,
+} from "@/lib/delivery-format"
 import { PAYPAL_BUTTON_DISABLED } from "@/lib/paypal-store"
+import { SHIPPING_CART_LINE } from "@/lib/shipping-copy"
 import {
   buildCartOrderWhatsAppMessage,
   formatRdCartMoney,
@@ -160,11 +164,23 @@ export function CartDrawer() {
             </ul>
 
             <footer className="shrink-0 border-t border-skailea-blush/40 bg-skailea-cream px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5">
-              <div className="mb-4 flex items-center justify-between border-b border-skailea-gold/25 pb-3">
-                <span className="font-semibold text-skailea-deep">Total</span>
-                <span className="font-serif text-xl font-bold text-skailea-deep">
-                  {formatRdCartMoney(total)}
-                </span>
+              <div className="mb-4 space-y-2 border-b border-skailea-gold/25 pb-3">
+                <div className="flex items-center justify-between text-sm text-skailea-deep">
+                  <span>Subtotal</span>
+                  <span className="font-medium">{formatRdCartMoney(total)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-skailea-charcoal/85">
+                  <span>Envío</span>
+                  <span className="text-right italic">{SHIPPING_CART_LINE}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-skailea-blush/40 pt-2">
+                  <span className="font-semibold text-skailea-deep">
+                    Total productos
+                  </span>
+                  <span className="font-serif text-xl font-bold text-skailea-deep">
+                    {formatRdCartMoney(total)}
+                  </span>
+                </div>
               </div>
               <div className="flex flex-col gap-2">
                 {canWhatsApp ? (
@@ -225,6 +241,10 @@ export function CartDrawer() {
         onCompleted={async ({
           customerName,
           customerPhone,
+          street,
+          citySector,
+          province,
+          deliveryNotes,
           wantsMayor,
         }) => {
           const items: OrderLineItem[] = lines.map((l) => {
@@ -239,9 +259,16 @@ export function CartDrawer() {
             }
           })
           const orderTotal = items.reduce((s, i) => s + i.line_total, 0)
+          const deliveryMultiline = formatDeliveryAddressMultiline({
+            street,
+            citySector,
+            province,
+          })
           await submitStoreOrder({
             customer_name: customerName,
             customer_phone: customerPhone,
+            delivery_address: deliveryMultiline,
+            delivery_notes: deliveryNotes.trim() || null,
             items,
             total: orderTotal,
             notes: wantsMayor
@@ -251,6 +278,12 @@ export function CartDrawer() {
           const msg = buildCartOrderWhatsAppMessage({
             customerName,
             customerPhoneDisplay: customerPhone.trim(),
+            deliveryAddressOneLine: formatDeliveryAddressOneLine({
+              street,
+              citySector,
+              province,
+            }),
+            deliveryNotes: deliveryNotes.trim() || null,
             lines: items.map((i) => ({
               quantity: i.quantity,
               name: i.name,
@@ -260,10 +293,6 @@ export function CartDrawer() {
             wantsMayor,
           })
           const href = whatsappUrl(whatsappDigits, msg)
-          saveCustomerContact({
-            name: customerName,
-            phone: customerPhone,
-          })
           if (href && href !== "#") {
             window.open(href, "_blank", "noopener,noreferrer")
           }

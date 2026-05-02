@@ -1,3 +1,5 @@
+import { SHIPPING_WHATSAPP_CLOSING } from "@/lib/shipping-copy"
+
 export function formatPriceDOP(value: number): string {
   return new Intl.NumberFormat("es-DO", {
     style: "currency",
@@ -58,6 +60,8 @@ export function buildCartWhatsAppMessage(lines: CartLineInput[]): string {
 export function buildProductOrderWhatsAppMessage(params: {
   customerName: string
   customerPhoneDisplay: string
+  deliveryAddressOneLine: string
+  deliveryNotes?: string | null
   productName: string
   priceLabel: string
   wantsMayor: boolean
@@ -67,7 +71,12 @@ export function buildProductOrderWhatsAppMessage(params: {
   let msg = `Hola Skailea Shop! 👋
 Mi nombre es ${params.customerName}
 Me interesa: ${params.productName} - ${params.priceLabel}
-Mi WhatsApp: ${params.customerPhoneDisplay}`
+📍 Dirección: ${params.deliveryAddressOneLine}
+📱 Mi WhatsApp: ${params.customerPhoneDisplay}`
+  const note = params.deliveryNotes?.trim()
+  if (note) {
+    msg += `\n📝 Nota: ${note}`
+  }
   if (
     params.wantsMayor &&
     params.mayorPriceLabel &&
@@ -75,6 +84,7 @@ Mi WhatsApp: ${params.customerPhoneDisplay}`
   ) {
     msg += `\n\nPrecio por mayor: ${params.mayorPriceLabel} (mín. ${params.mayorMin} uds.)`
   }
+  msg += `\n\n${SHIPPING_WHATSAPP_CLOSING}`
   return msg
 }
 
@@ -82,6 +92,8 @@ Mi WhatsApp: ${params.customerPhoneDisplay}`
 export function buildCartOrderWhatsAppMessage(params: {
   customerName: string
   customerPhoneDisplay: string
+  deliveryAddressOneLine: string
+  deliveryNotes?: string | null
   lines: Array<{ quantity: number; name: string; lineLabel: string }>
   totalLabel: string
   wantsMayor: boolean
@@ -95,11 +107,17 @@ Mi nombre es ${params.customerName}
 Pedido:
 ${body}
 
-Total: ${params.totalLabel}
-Mi WhatsApp: ${params.customerPhoneDisplay}`
+Total productos: ${params.totalLabel}
+📍 Dirección: ${params.deliveryAddressOneLine}
+📱 Mi WhatsApp: ${params.customerPhoneDisplay}`
+  const note = params.deliveryNotes?.trim()
+  if (note) {
+    msg += `\n📝 Nota: ${note}`
+  }
   if (params.wantsMayor) {
     msg += `\n\n(Solicito precios por mayor donde aplique.)`
   }
+  msg += `\n\n${SHIPPING_WHATSAPP_CLOSING}`
   return msg
 }
 

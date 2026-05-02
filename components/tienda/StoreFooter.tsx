@@ -10,6 +10,7 @@ import {
   WA_FLOAT_MESSAGE,
   getWhatsAppDigitsFromEnv,
 } from "@/lib/site"
+import { SHIPPING_FOOTER_LINE } from "@/lib/shipping-copy"
 import { whatsappUrl } from "@/lib/utils"
 
 function InstagramIcon({ className }: { className?: string }) {
@@ -89,6 +90,10 @@ export function StoreFooter() {
             <InstagramIcon className="h-5 w-5" />
           </a>
         </div>
+
+        <p className="text-center text-sm font-medium text-skailea-gold/95 sm:text-left">
+          {SHIPPING_FOOTER_LINE}
+        </p>
 
         <p className="text-center text-xs text-skailea-cream/55 sm:text-left">
           © {year} {SITE_NAME} · {SITE_LOCATION}

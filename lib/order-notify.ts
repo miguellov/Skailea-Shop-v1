@@ -10,6 +10,10 @@ export type NotifyOrderPayload = {
   customer_name: string
   /** Texto tal como lo escribió el cliente (email legible) */
   customer_phone_display: string
+  /** Dirección multilínea */
+  delivery_address: string
+  /** Instrucciones especiales del cliente (opcional) */
+  delivery_notes?: string | null
   items: Array<{
     name: string
     quantity: number
@@ -17,6 +21,7 @@ export type NotifyOrderPayload = {
     line_total: number
   }>
   total: number
+  /** Notas internas (ej. precio por mayor) */
   notes?: string | null
 }
 
@@ -55,10 +60,18 @@ export function buildOrderNotificationHtml(payload: NotifyOrderPayload): string 
     )
     .join("")
 
-  const notesBlock =
+  const deliveryNotesBlock =
+    payload.delivery_notes && payload.delivery_notes.trim().length > 0
+      ? `<p style="margin:14px 0 0;font-size:13px;color:${deep};opacity:0.92;">
+          <strong>Instrucciones del cliente:</strong><br/>
+          <span style="white-space:pre-wrap;">${escapeHtml(payload.delivery_notes.trim())}</span>
+        </p>`
+      : ""
+
+  const internalNotesBlock =
     payload.notes && payload.notes.trim().length > 0
-      ? `<p style="margin:16px 0 0;font-size:13px;color:${deep};opacity:0.88;">
-          <strong>Notas:</strong> ${escapeHtml(payload.notes.trim())}
+      ? `<p style="margin:14px 0 0;font-size:12px;color:#6b7280;">
+          <strong>Notas internas:</strong> ${escapeHtml(payload.notes.trim())}
         </p>`
       : ""
 
@@ -79,7 +92,10 @@ export function buildOrderNotificationHtml(payload: NotifyOrderPayload): string 
           <p style="margin:0;font-size:16px;color:${rose};font-weight:600;">${escapeHtml(payload.customer_name)}</p>
           <p style="margin:16px 0 6px;font-size:15px;color:${deep};"><strong>WhatsApp / teléfono</strong></p>
           <p style="margin:0;font-size:15px;color:${deep};">${escapeHtml(payload.customer_phone_display)}</p>
-          ${notesBlock}
+          <p style="margin:18px 0 6px;font-size:15px;color:${deep};"><strong>📍 Dirección de envío</strong></p>
+          <p style="margin:0;font-size:14px;color:${deep};white-space:pre-wrap;line-height:1.5;">${escapeHtml(payload.delivery_address.trim())}</p>
+          ${deliveryNotesBlock}
+          ${internalNotesBlock}
           <p style="margin:22px 0 10px;font-size:15px;color:${deep};"><strong>Productos</strong></p>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;border-radius:12px;overflow:hidden;border:1px solid ${blush};">
             <thead>

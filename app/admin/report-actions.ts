@@ -40,6 +40,10 @@ function mapOrder(row: Record<string, unknown>): Order {
     id: String(row.id),
     customer_name: String(row.customer_name ?? ""),
     customer_phone: String(row.customer_phone ?? ""),
+    delivery_address:
+      row.delivery_address == null ? null : String(row.delivery_address),
+    delivery_notes:
+      row.delivery_notes == null ? null : String(row.delivery_notes),
     items,
     total: Number(row.total ?? 0),
     status,

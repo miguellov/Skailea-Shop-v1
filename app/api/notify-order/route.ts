@@ -11,6 +11,7 @@ function isPayload(v: unknown): v is NotifyOrderPayload {
   const o = v as Record<string, unknown>
   if (typeof o.customer_name !== "string") return false
   if (typeof o.customer_phone_display !== "string") return false
+  if (typeof o.delivery_address !== "string") return false
   if (!Array.isArray(o.items)) return false
   if (typeof o.total !== "number") return false
   for (const it of o.items) {

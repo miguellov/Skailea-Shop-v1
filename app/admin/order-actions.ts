@@ -11,6 +11,8 @@ import type {
 export type SubmitStoreOrderInput = {
   customer_name: string
   customer_phone: string
+  delivery_address: string
+  delivery_notes?: string | null
   items: OrderLineItem[]
   total: number
   notes?: string | null
@@ -23,10 +25,20 @@ export type DashboardOrderStats = {
 }
 
 function mapOrderRow(row: Record<string, unknown>): Order {
+  const rawDel = row.delivery_address
+  const rawDelNotes = row.delivery_notes
   return {
     id: String(row.id),
     customer_name: String(row.customer_name),
     customer_phone: String(row.customer_phone),
+    delivery_address:
+      rawDel == null || String(rawDel).trim() === ""
+        ? null
+        : String(rawDel),
+    delivery_notes:
+      rawDelNotes == null || String(rawDelNotes).trim() === ""
+        ? null
+        : String(rawDelNotes),
     items: (row.items as OrderLineItem[]) ?? [],
     total: Number(row.total),
     status: row.status as OrderStatus,
@@ -57,10 +69,19 @@ export async function submitStoreOrder(
   if (!input.items.length) {
     throw new Error("El pedido no tiene artículos")
   }
+  const deliveryAddr = input.delivery_address.trim()
+  if (!deliveryAddr) {
+    throw new Error("La dirección de envío es obligatoria")
+  }
+
+  const deliveryNotes =
+    input.delivery_notes?.trim() ? input.delivery_notes.trim() : null
 
   const { error } = await sb.from("orders").insert({
     customer_name: name,
     customer_phone: phone,
+    delivery_address: deliveryAddr,
+    delivery_notes: deliveryNotes,
     items: input.items,
     total: input.total,
     status: "nuevo",
@@ -73,6 +94,8 @@ export async function submitStoreOrder(
     await triggerOrderNotificationFetch({
       customer_name: name,
       customer_phone_display: input.customer_phone.trim(),
+      delivery_address: deliveryAddr,
+      delivery_notes: deliveryNotes,
       items: input.items.map((i) => ({
         name: i.name,
         quantity: i.quantity,
@@ -230,6 +253,8 @@ export async function createOrder(input: {
   const { error } = await sb.from("orders").insert({
     customer_name: input.customer_name.trim(),
     customer_phone: phone,
+    delivery_address: null,
+    delivery_notes: null,
     items,
     total,
     status: "nuevo",
@@ -241,6 +266,8 @@ export async function createOrder(input: {
     await triggerOrderNotificationFetch({
       customer_name: input.customer_name.trim(),
       customer_phone_display: input.customer_phone.trim(),
+      delivery_address: "Pedido registrado en tienda (sin dirección web)",
+      delivery_notes: null,
       items: items.map((i) => ({
         name: i.name,
         quantity: i.quantity,
