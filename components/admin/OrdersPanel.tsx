@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState, useTransition } from "react"
 import {
   advanceOrderStatus,
   deleteOrder,
@@ -60,10 +60,17 @@ type Props = {
 
 export function OrdersPanel({ initialOrders }: Props) {
   const router = useRouter()
+  const [isPending, startTransition] = useTransition()
   const { products } = useAdminProducts()
   const [tab, setTab] = useState<OrderStatus | "todos">("nuevo")
   const [manualOpen, setManualOpen] = useState(false)
   const [detailOrder, setDetailOrder] = useState<Order | null>(null)
+
+  const refreshOrders = useCallback(() => {
+    startTransition(() => {
+      router.refresh()
+    })
+  }, [router])
 
   const filtered = useMemo(() => {
     if (tab === "todos") return initialOrders
@@ -77,7 +84,7 @@ export function OrdersPanel({ initialOrders }: Props) {
     })
     try {
       await advanceOrderStatus(o.id, o.status)
-      router.refresh()
+      refreshOrders()
     } catch (e) {
       window.alert(e instanceof Error ? e.message : "Error")
     }
@@ -86,7 +93,7 @@ export function OrdersPanel({ initialOrders }: Props) {
   async function onSaveNotes(id: string, value: string) {
     try {
       await updateOrderNotes(id, value)
-      router.refresh()
+      refreshOrders()
     } catch (e) {
       window.alert(e instanceof Error ? e.message : "Error")
     }
@@ -99,7 +106,7 @@ export function OrdersPanel({ initialOrders }: Props) {
       window.alert("Error: " + result.error)
       return
     }
-    router.refresh()
+    refreshOrders()
   }
 
   function customerNotifyHref(o: Order): string | null {
@@ -111,6 +118,29 @@ export function OrdersPanel({ initialOrders }: Props) {
   }
 
   return (
+    <>
+      {isPending && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-skailea-deep/20 backdrop-blur-[2px]"
+          aria-busy="true"
+          aria-live="polite"
+        >
+          <div className="flex flex-col items-center gap-4 rounded-3xl border border-skailea-blush/50 bg-skailea-cream/95 px-8 py-7 shadow-xl sm:px-10">
+            <div
+              className="h-14 w-14 rounded-full border-2 border-skailea-gold border-t-skailea-rose animate-spin"
+              aria-hidden
+            />
+            <div className="text-center">
+              <p className="font-serif text-xl font-bold text-skailea-deep">
+                Skailea
+              </p>
+              <p className="mt-1 text-sm font-medium text-skailea-charcoal/85">
+                Cargando pedidos...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -263,7 +293,7 @@ export function OrdersPanel({ initialOrders }: Props) {
                   />
                 </label>
 
-                <OrderInvoiceControls order={o} />
+                <OrderInvoiceControls order={o} onRefresh={refreshOrders} />
 
                 <div className="relative z-10 mt-3 flex flex-wrap items-center gap-2">
                   {nextLabel && (
@@ -317,10 +347,15 @@ export function OrdersPanel({ initialOrders }: Props) {
         open={manualOpen}
         onClose={() => setManualOpen(false)}
         products={products}
-        onSaved={() => router.refresh()}
+        onSaved={refreshOrders}
       />
 
-      <OrderDetailModal order={detailOrder} onClose={() => setDetailOrder(null)} />
+      <OrderDetailModal
+        order={detailOrder}
+        onClose={() => setDetailOrder(null)}
+        onOrdersMutated={refreshOrders}
+      />
     </div>
+    </>
   )
 }

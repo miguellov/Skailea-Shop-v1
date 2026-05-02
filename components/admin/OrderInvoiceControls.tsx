@@ -7,7 +7,14 @@ import type { Order, PaymentMethod } from "@/lib/types"
 import { captureInvoiceToPng, InvoicePreview } from "@/components/admin/InvoicePreview"
 import { MarkPaidModal } from "@/components/admin/MarkPaidModal"
 
-export function OrderInvoiceControls({ order }: { order: Order }) {
+export function OrderInvoiceControls({
+  order,
+  onRefresh,
+}: {
+  order: Order
+  /** Si viene del panel de pedidos, usa el mismo refresh (p. ej. con useTransition). */
+  onRefresh?: () => void
+}) {
   const router = useRouter()
   const [markOpen, setMarkOpen] = useState(false)
   const [captureOrder, setCaptureOrder] = useState<Order | null>(null)
@@ -19,7 +26,8 @@ export function OrderInvoiceControls({ order }: { order: Order }) {
       window.alert("Error: " + result.error)
       return
     }
-    router.refresh()
+    if (onRefresh) onRefresh()
+    else router.refresh()
     setMarkOpen(false)
   }
 

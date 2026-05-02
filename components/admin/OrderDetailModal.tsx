@@ -24,9 +24,15 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 type Props = {
   order: Order | null
   onClose: () => void
+  /** Tras marcar pagado u otras mutaciones desde el modal */
+  onOrdersMutated?: () => void
 }
 
-export function OrderDetailModal({ order, onClose }: Props) {
+export function OrderDetailModal({
+  order,
+  onClose,
+  onOrdersMutated,
+}: Props) {
   useEffect(() => {
     if (!order) return
     const onKey = (e: KeyboardEvent) => {
@@ -187,7 +193,7 @@ export function OrderDetailModal({ order, onClose }: Props) {
             </p>
           )}
 
-          <OrderInvoiceControls order={order} />
+          <OrderInvoiceControls order={order} onRefresh={onOrdersMutated} />
 
           <h3 className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-skailea-gold">
             Historial de estados
