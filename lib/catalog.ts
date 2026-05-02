@@ -2,6 +2,11 @@ import { createPublicServerClient } from "@/lib/supabase"
 import { mapCategory, mapProductPublic } from "@/lib/db-map"
 import type { Brand, Category, ProductPublic } from "@/lib/types"
 
+/**
+ * Catálogo público con `createPublicServerClient()` (clave **anon / publishable**).
+ * Si en producción ves pocas filas, revisa RLS para rol `anon` en tablas y vista.
+ * Ver `scripts/catalog-public-rls.sql`.
+ */
 export async function getStoreCatalog(): Promise<{
   categories: Category[]
   brands: Brand[]
@@ -21,7 +26,8 @@ export async function getStoreCatalog(): Promise<{
     supabase
       .from("products_with_category")
       .select("*")
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(2000),
   ])
 
   if (catRes.error) {
@@ -33,6 +39,9 @@ export async function getStoreCatalog(): Promise<{
   if (prodRes.error) {
     throw new Error(prodRes.error.message)
   }
+
+  const rawProductRows = prodRes.data?.length ?? 0
+  console.log("[getStoreCatalog] filas brutas products_with_category:", rawProductRows)
 
   const categories = (catRes.data ?? []).map((r) =>
     mapCategory(r as Record<string, unknown>)
@@ -48,6 +57,14 @@ export async function getStoreCatalog(): Promise<{
   })
   const products = (prodRes.data ?? []).map((r) =>
     mapProductPublic(r as Record<string, unknown>)
+  )
+
+  console.log("Productos encontrados:", products.length)
+  console.log(
+    "[getStoreCatalog] categorías:",
+    categories.length,
+    "marcas:",
+    brands.length
   )
 
   return { categories, brands, products }

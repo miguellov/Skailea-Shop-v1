@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic"
 export default async function Home() {
   const whatsappDigits = getWhatsAppDigitsFromEnv()
   const { categories, brands, products } = await getStoreCatalog()
+  console.log("[page.tsx] catálogo listo — productos:", products.length)
 
   return (
     <TiendaShell whatsappDigits={whatsappDigits}>
