@@ -268,7 +268,7 @@ export function CartDrawer() {
                   province,
                 })
               : null
-          await submitStoreOrder({
+          const result = await submitStoreOrder({
             customer_name: customerName,
             customer_phone: customerPhone,
             delivery_type: deliveryType,
@@ -280,6 +280,10 @@ export function CartDrawer() {
               ? "Cliente indicó precio por mayor en el pedido."
               : null,
           })
+          if (!result.success) {
+            alert("Error: " + result.error)
+            return
+          }
           const msg = buildCartOrderWhatsAppMessage({
             customerName,
             customerPhoneDisplay: customerPhone.trim(),

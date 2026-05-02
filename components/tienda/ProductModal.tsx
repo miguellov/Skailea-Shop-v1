@@ -247,7 +247,7 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
                 province,
               })
             : null
-        await submitStoreOrder({
+        const result = await submitStoreOrder({
           customer_name: customerName,
           customer_phone: customerPhone,
           delivery_type: deliveryType,
@@ -259,6 +259,10 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
             ? "Cliente indicó interés en precio por mayor."
             : null,
         })
+        if (!result.success) {
+          alert("Error: " + result.error)
+          return
+        }
         const priceStr = formatRdCartMoney(unitPrice)
         const msg = buildProductOrderWhatsAppMessage({
           customerName,

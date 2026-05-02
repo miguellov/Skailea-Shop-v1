@@ -22,6 +22,10 @@ export type SubmitStoreOrderInput = {
   notes?: string | null
 }
 
+export type SubmitStoreOrderResult =
+  | { success: true; id: string }
+  | { success: false; error: string }
+
 export type DashboardOrderStats = {
   newOrdersToday: number
   soldTodayDop: number
@@ -89,31 +93,21 @@ function utcDayBounds(): { start: string; end: string } {
  */
 export async function submitStoreOrder(
   input: SubmitStoreOrderInput
-): Promise<void> {
+): Promise<SubmitStoreOrderResult> {
   console.log(
     "[submitStoreOrder] (1) Cliente: createServiceRoleClient — SERVICE ROLE (bypass RLS)"
   )
   console.log("[submitStoreOrder] (2) Input recibido:", JSON.stringify(input, null, 2))
 
-  let sb: ReturnType<typeof createServiceRoleClient>
-  try {
-    sb = createServiceRoleClient()
-    console.log("[submitStoreOrder] (3) Cliente Supabase instanciado OK")
-  } catch (envErr) {
-    const msg = formatSupabaseError(envErr)
-    console.error("[submitStoreOrder] ERROR creando cliente:", msg)
-    throw new Error(`Supabase (service role): ${msg}`)
-  }
-
   const name = input.customer_name.trim()
   const phone = input.customer_phone.replace(/\D/g, "")
   if (!name || !phone) {
     console.warn("[submitStoreOrder] Validación: falta nombre o teléfono")
-    throw new Error("Nombre y teléfono son obligatorios")
+    return { success: false, error: "Nombre y teléfono son obligatorios" }
   }
   if (!input.items.length) {
     console.warn("[submitStoreOrder] Validación: sin ítems")
-    throw new Error("El pedido no tiene artículos")
+    return { success: false, error: "El pedido no tiene artículos" }
   }
   const dtype: DeliveryType =
     input.delivery_type === "retiro" ? "retiro" : "envio"
@@ -121,7 +115,7 @@ export async function submitStoreOrder(
   if (dtype === "envio") {
     const trimmed = (input.delivery_address ?? "").trim()
     if (!trimmed) {
-      throw new Error("La dirección de envío es obligatoria")
+      return { success: false, error: "La dirección de envío es obligatoria" }
     }
     deliveryAddr = trimmed
   }
@@ -147,46 +141,64 @@ export async function submitStoreOrder(
 
   console.log("[submitStoreOrder] (4) Insert payload:", JSON.stringify(orderData, null, 2))
 
-  const { data: inserted, error } = await sb
-    .from("orders")
-    .insert(orderData)
-    .select("id")
-    .maybeSingle()
-
-  console.log("[submitStoreOrder] (5) Resultado insert — data:", inserted, "error:", error)
-
-  if (error) {
-    const full = formatSupabaseError(error)
-    console.error("[submitStoreOrder] ERROR Supabase completo:", full)
-    throw new Error(`Supabase insert: ${full}`)
-  }
-  if (!inserted?.id) {
-    console.error("[submitStoreOrder] Insert sin id devuelto:", inserted)
-    throw new Error("El pedido no se guardó (sin id en respuesta)")
-  }
-  console.log("[submitStoreOrder] (6) OK pedido id:", inserted.id)
-
   try {
-    await triggerOrderNotificationFetch({
-      customer_name: name,
-      customer_phone_display: input.customer_phone.trim(),
-      delivery_type: dtype,
-      delivery_address: deliveryAddr,
-      delivery_notes: deliveryNotes,
-      items: input.items.map((i) => ({
-        name: i.name,
-        quantity: i.quantity,
-        unit_price: i.unit_price,
-        line_total: i.line_total,
-      })),
-      total: input.total,
-      notes: input.notes ?? null,
-    })
-  } catch (notifyErr) {
-    console.warn(
-      "[submitStoreOrder] Aviso: notificación email falló (pedido ya guardado):",
-      formatSupabaseError(notifyErr)
-    )
+    const supabase = createServiceRoleClient()
+    console.log("1. Cliente creado")
+
+    const { data, error } = await supabase
+      .from("orders")
+      .insert([orderData])
+      .select("id")
+
+    console.log("2. Resultado:", { data, error })
+
+    if (error) {
+      return {
+        success: false,
+        error: JSON.stringify(error, null, 2),
+      }
+    }
+
+    const id = data?.[0]?.id
+    if (id == null) {
+      return {
+        success: false,
+        error:
+          "El pedido no se guardó (sin id en respuesta): " +
+          JSON.stringify(data, null, 2),
+      }
+    }
+
+    const idStr = String(id)
+    console.log("[submitStoreOrder] (6) OK pedido id:", idStr)
+
+    try {
+      await triggerOrderNotificationFetch({
+        customer_name: name,
+        customer_phone_display: input.customer_phone.trim(),
+        delivery_type: dtype,
+        delivery_address: deliveryAddr,
+        delivery_notes: deliveryNotes,
+        items: input.items.map((i) => ({
+          name: i.name,
+          quantity: i.quantity,
+          unit_price: i.unit_price,
+          line_total: i.line_total,
+        })),
+        total: input.total,
+        notes: input.notes ?? null,
+      })
+    } catch (notifyErr) {
+      console.warn(
+        "[submitStoreOrder] Aviso: notificación email falló (pedido ya guardado):",
+        formatSupabaseError(notifyErr)
+      )
+    }
+
+    return { success: true, id: idStr }
+  } catch (e) {
+    console.error("3. Exception:", e)
+    return { success: false, error: String(e) }
   }
 }
 
