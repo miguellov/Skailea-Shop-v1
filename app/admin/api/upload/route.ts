@@ -3,8 +3,12 @@ import { v2 as cloudinary } from "cloudinary"
 
 export const runtime = "nodejs"
 
-const UPLOAD_PRESET = "skailea_products"
-const MAX_BYTES = 8 * 1024 * 1024
+/** Preset en Cloudinary: para uploads desde este servidor (firmados con API) debe permitir “Signed uploads” o usar carpeta sin preset (ver CLOUDINARY_UPLOAD_FOLDER). Preset solo “Unsigned” sirve para subidas directas desde el navegador, no para esta ruta. */
+const UPLOAD_PRESET = process.env.CLOUDINARY_UPLOAD_PRESET?.trim() || "skailea_products"
+/** Si está definida, se sube con API firmada a esta carpeta sin usar preset (evita fallos si el preset no admite signed). */
+const UPLOAD_FOLDER = process.env.CLOUDINARY_UPLOAD_FOLDER?.trim()
+/** Vercel limita el body (~4.5 MB en muchos planes); mantener por debajo. */
+const MAX_BYTES = 4 * 1024 * 1024
 
 function configureCloudinary() {
   const cloud_name = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME?.trim()
@@ -88,19 +92,37 @@ export async function POST(request: NextRequest) {
 
     const dataUri = `data:${mime};base64,${buffer.toString("base64")}`
 
-    const result = await cloudinary.uploader.upload(dataUri, {
-      upload_preset: UPLOAD_PRESET,
-      resource_type: "image",
-    })
+    let result: Awaited<ReturnType<typeof cloudinary.uploader.upload>>
 
-    if (!result?.secure_url) {
+    if (UPLOAD_FOLDER) {
+      result = await cloudinary.uploader.upload(dataUri, {
+        folder: UPLOAD_FOLDER,
+        resource_type: "image",
+      })
+    } else {
+      result = await cloudinary.uploader.upload(dataUri, {
+        upload_preset: UPLOAD_PRESET,
+        resource_type: "image",
+      })
+    }
+
+    const secureUrl = result.secure_url || result.url
+    console.log("Upload result:", secureUrl)
+    if (process.env.NODE_ENV === "development") {
+      console.log("[cloudinary] public_id:", result.public_id)
+    }
+
+    if (!secureUrl) {
       return NextResponse.json(
         { error: "Cloudinary no devolvió secure_url" },
         { status: 502 }
       )
     }
 
-    return NextResponse.json({ secure_url: result.secure_url })
+    return NextResponse.json({
+      secure_url: secureUrl,
+      public_id: result.public_id ?? undefined,
+    })
   } catch (e) {
     console.error("[cloudinary upload]", e)
     const msg = e instanceof Error ? e.message : "Error al subir la imagen"

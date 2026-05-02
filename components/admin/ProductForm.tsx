@@ -157,16 +157,28 @@ export function ProductForm({
         method: "POST",
         body: fd,
       })
-      const data = (await res.json()) as { secure_url?: string; error?: string }
+      const raw = await res.text()
+      let data: { secure_url?: string; error?: string }
+      try {
+        data = JSON.parse(raw) as { secure_url?: string; error?: string }
+      } catch {
+        console.error("[ProductForm] Upload respuesta no JSON:", raw.slice(0, 400))
+        throw new Error(
+          res.ok
+            ? "Respuesta inválida del servidor al subir"
+            : `Error ${res.status} al subir`
+        )
+      }
       if (!res.ok) {
         throw new Error(data.error || "No se pudo subir la imagen")
       }
-      if (!data.secure_url) {
-        throw new Error("Respuesta sin URL")
+      const uploadedUrl = data.secure_url?.trim()
+      if (!uploadedUrl) {
+        console.error("[ProductForm] JSON sin secure_url:", data)
+        throw new Error("Respuesta sin URL de imagen")
       }
-      setPhotos((prev) =>
-        finalizePhotos([...prev, data.secure_url!])
-      )
+      console.log("[ProductForm] Upload result:", uploadedUrl)
+      setPhotos((prev) => finalizePhotos([...prev, uploadedUrl]))
       setPendingFile(null)
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : "Error al subir")
