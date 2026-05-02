@@ -28,7 +28,7 @@ export function CartFab() {
     <button
       type="button"
       onClick={openDrawer}
-      className="fixed z-[55] flex h-14 w-14 items-center justify-center rounded-full bg-skailea-deep text-skailea-cream shadow-lg shadow-black/25 ring-2 ring-skailea-gold/35 transition hover:bg-skailea-deep/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-skailea-gold focus-visible:ring-offset-2 focus-visible:ring-offset-skailea-cream"
+      className="fixed z-[55] flex h-14 w-14 items-center justify-center rounded-full bg-skailea-deep text-skailea-cream shadow-lg shadow-skailea-deep/30 ring-2 ring-skailea-gold/40 transition hover:bg-skailea-deep/95 focus:outline-none focus-visible:ring-2 focus-visible:ring-skailea-gold focus-visible:ring-offset-2 focus-visible:ring-offset-skailea-cream"
       style={{
         right: "max(1rem, env(safe-area-inset-right))",
         bottom: "max(1rem, env(safe-area-inset-bottom))",
@@ -37,7 +37,7 @@ export function CartFab() {
     >
       <BagIcon className="h-6 w-6" />
       {itemCount > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-skailea-rose px-1.5 text-xs font-bold text-skailea-cream shadow-sm">
+        <span className="absolute -right-0.5 -top-0.5 flex h-6 min-w-[1.5rem] items-center justify-center rounded-full bg-skailea-gold px-1.5 text-xs font-bold text-skailea-deep shadow-sm">
           {itemCount > 99 ? "99+" : itemCount}
         </span>
       )}

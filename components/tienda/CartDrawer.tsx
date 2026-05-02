@@ -177,7 +177,7 @@ export function CartDrawer() {
                   <button
                     type="button"
                     onClick={() => setCheckoutOpen(true)}
-                    className="flex w-full items-center justify-center gap-2 rounded-full bg-[#25D366] py-3 text-sm font-semibold text-white shadow-md transition hover:brightness-110"
+                    className="flex w-full items-center justify-center gap-2 rounded-full border-2 border-skailea-gold/45 bg-white py-3 text-sm font-semibold text-[#128C7E] shadow-md shadow-skailea-deep/10 ring-1 ring-skailea-deep/10 transition hover:bg-skailea-cream"
                   >
                     Enviar pedido por WhatsApp
                   </button>

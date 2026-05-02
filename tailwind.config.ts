@@ -22,6 +22,7 @@ const config: Config = {
           blush: "var(--blush)",
           rose: "var(--rose)",
           deep: "var(--deep)",
+          "deep-end": "var(--deep-end)",
           gold: "var(--gold)",
           charcoal: "var(--charcoal)",
         },

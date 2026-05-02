@@ -33,7 +33,7 @@ export function CartHeaderButton() {
     >
       <BagIcon className="h-5 w-5" />
       {itemCount > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-skailea-rose px-1 text-[10px] font-bold text-skailea-cream shadow-sm">
+        <span className="absolute -right-0.5 -top-0.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-skailea-gold px-1 text-[10px] font-bold text-skailea-deep shadow-sm">
           {itemCount > 99 ? "99+" : itemCount}
         </span>
       )}

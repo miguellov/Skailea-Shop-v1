@@ -3,15 +3,16 @@
 @tailwind utilities;
 
 :root {
-  --cream: #faf6f1;
-  --blush: #e8c4b8;
-  --rose: #c17b6f;
-  --deep: #3d1f1a;
-  --deep-end: #26100c;
-  --gold: #c9a96e;
-  --charcoal: #2a2a2a;
+  /* Paleta logo: azul royal + rosa suave */
+  --cream: #f5f0f8;
+  --blush: #e8c4d0;
+  --rose: #1b3fa0;
+  --deep: #0d2266;
+  --deep-end: #061440;
+  --gold: #e8a0b4;
+  --charcoal: #1a1a2e;
   --background: var(--cream);
-  --foreground: var(--deep);
+  --foreground: var(--charcoal);
 }
 
 body {
@@ -29,15 +30,20 @@ body {
     background-image:
       radial-gradient(
         ellipse 120% 80% at 15% 20%,
-        rgba(232, 196, 184, 0.45) 0%,
+        rgba(232, 196, 208, 0.5) 0%,
         transparent 55%
       ),
       radial-gradient(
         ellipse 100% 70% at 85% 75%,
-        rgba(201, 169, 110, 0.14) 0%,
+        rgba(232, 160, 180, 0.18) 0%,
         transparent 50%
       ),
-      linear-gradient(165deg, var(--cream) 0%, rgba(232, 196, 184, 0.35) 48%, var(--blush) 100%);
+      linear-gradient(
+        165deg,
+        var(--cream) 0%,
+        rgba(232, 196, 208, 0.4) 48%,
+        var(--blush) 100%
+      );
   }
 
   .skailea-header-gradient {
@@ -45,7 +51,7 @@ body {
       160deg,
       var(--deep) 0%,
       var(--deep-end) 55%,
-      #1a0a08 100%
+      #030818 100%
     );
   }
 }

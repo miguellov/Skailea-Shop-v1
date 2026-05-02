@@ -50,7 +50,7 @@ export function CatalogFilters({
                 onClick={() => onSelectCategory(c.slug)}
                 className={`max-w-[220px] shrink-0 truncate rounded-full px-4 py-2 text-sm font-medium transition-colors ${
                   active
-                    ? "bg-skailea-rose text-skailea-cream shadow-md ring-1 ring-skailea-rose/30"
+                    ? "bg-skailea-gold text-skailea-deep shadow-md ring-1 ring-skailea-gold/45"
                     : "bg-white/70 text-skailea-deep shadow-sm ring-1 ring-skailea-blush/40 hover:bg-skailea-blush/50"
                 }`}
                 title={c.name}

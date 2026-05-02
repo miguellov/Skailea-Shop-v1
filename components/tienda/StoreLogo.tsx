@@ -6,7 +6,7 @@ type Props = {
   priority?: boolean
 }
 
-const HEADER_SHADOW = "0 2px 12px rgba(201, 169, 110, 0.4)"
+const HEADER_SHADOW = "0 2px 12px rgba(232, 160, 180, 0.45)"
 
 export function StoreLogo({ variant, priority = false }: Props) {
   if (variant === "footer") {

@@ -27,7 +27,7 @@ export function WhatsAppFab({ whatsappDigits }: { whatsappDigits: string }) {
       target="_blank"
       rel="noopener noreferrer"
       title="Escríbenos"
-      className="group fixed z-[55] flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_2px_14px_rgba(0,0,0,0.18)] transition hover:brightness-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 focus-visible:ring-offset-2 focus-visible:ring-offset-skailea-cream"
+      className="group fixed z-[55] flex h-14 w-14 items-center justify-center rounded-full bg-white text-[#25D366] shadow-[0_2px_18px_rgba(13,34,102,0.22)] ring-2 ring-skailea-gold/55 ring-offset-2 ring-offset-skailea-cream transition hover:bg-skailea-cream hover:ring-skailea-gold/70 focus:outline-none focus-visible:ring-skailea-deep focus-visible:ring-offset-2 focus-visible:ring-offset-skailea-cream"
       style={{
         left: "max(1rem, env(safe-area-inset-left))",
         bottom: "max(1rem, env(safe-area-inset-bottom))",

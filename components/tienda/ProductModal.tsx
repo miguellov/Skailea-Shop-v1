@@ -164,13 +164,13 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
                 className={`order-1 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-sm transition sm:order-2 ${
                   out
                     ? "pointer-events-none cursor-not-allowed bg-skailea-charcoal/35 text-skailea-cream/80"
-                    : "bg-[#25D366] text-white hover:brightness-110"
+                    : "border-2 border-skailea-gold/50 bg-white text-[#128C7E] shadow-sm hover:bg-skailea-cream"
                 }`}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-disabled={out}
               >
-                <WhatsAppIcon className="h-5 w-5 shrink-0 opacity-95" />
+                <WhatsAppIcon className="h-5 w-5 shrink-0 text-[#25D366]" />
                 WhatsApp
               </a>
             ) : (
