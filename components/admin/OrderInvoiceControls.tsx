@@ -14,13 +14,13 @@ export function OrderInvoiceControls({ order }: { order: Order }) {
   const invoiceRef = useRef<HTMLDivElement>(null)
 
   async function onPickPayment(method: PaymentMethod) {
-    try {
-      await markOrderAsPaid(order.id, method)
-      router.refresh()
-      setMarkOpen(false)
-    } catch (e) {
-      window.alert(e instanceof Error ? e.message : "Error al guardar el pago")
+    const result = await markOrderAsPaid(order.id, method)
+    if (!result.success) {
+      window.alert("Error: " + result.error)
+      return
     }
+    router.refresh()
+    setMarkOpen(false)
   }
 
   async function runCapture(): Promise<Blob | null> {

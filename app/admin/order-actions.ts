@@ -1,5 +1,6 @@
 "use server"
 
+import { revalidatePath } from "next/cache"
 import { createServiceRoleClient } from "@/lib/supabase-server"
 import { formatSupabaseError } from "@/lib/supabase-errors"
 import { triggerOrderNotificationFetch } from "@/lib/order-notify"
@@ -24,6 +25,10 @@ export type SubmitStoreOrderInput = {
 
 export type SubmitStoreOrderResult =
   | { success: true; id: string }
+  | { success: false; error: string }
+
+export type MarkOrderAsPaidResult =
+  | { success: true }
   | { success: false; error: string }
 
 export type DashboardOrderStats = {
@@ -323,38 +328,54 @@ async function allocateNextInvoiceNumber(sb: ReturnType<
 export async function markOrderAsPaid(
   id: string,
   paymentMethod: PaymentMethod
-): Promise<void> {
-  const sb = createServiceRoleClient()
-  const { data: existing, error: fe } = await sb
-    .from("orders")
-    .select("id,paid")
-    .eq("id", id)
-    .maybeSingle()
-  if (fe) throw new Error(fe.message)
-  if (!existing) throw new Error("Pedido no encontrado")
-  if ((existing as { paid?: boolean }).paid === true) {
-    throw new Error("Este pedido ya está marcado como pagado")
-  }
+): Promise<MarkOrderAsPaidResult> {
+  try {
+    const sb = createServiceRoleClient()
+    const { data: existing, error: fe } = await sb
+      .from("orders")
+      .select("id,paid")
+      .eq("id", id)
+      .maybeSingle()
+    if (fe) throw fe
+    if (!existing) {
+      return { success: false, error: "Pedido no encontrado" }
+    }
+    if ((existing as { paid?: boolean }).paid === true) {
+      return {
+        success: false,
+        error: "Este pedido ya está marcado como pagado",
+      }
+    }
 
-  const invoiceNumber = await allocateNextInvoiceNumber(sb)
-  const paidAt = new Date().toISOString()
+    const invoiceNumber = await allocateNextInvoiceNumber(sb)
+    const paidAt = new Date().toISOString()
 
-  const { data, error } = await sb
-    .from("orders")
-    .update({
-      paid: true,
-      payment_method: paymentMethod,
-      paid_at: paidAt,
-      invoice_number: invoiceNumber,
-      updated_at: paidAt,
-    })
-    .eq("id", id)
-    .eq("paid", false)
-    .select("id")
+    const { data, error } = await sb
+      .from("orders")
+      .update({
+        paid: true,
+        payment_method: paymentMethod,
+        paid_at: paidAt,
+        invoice_number: invoiceNumber,
+        updated_at: paidAt,
+      })
+      .eq("id", id)
+      .eq("paid", false)
+      .select("id")
 
-  if (error) throw new Error(error.message)
-  if (!data?.length) {
-    throw new Error("Este pedido ya está marcado como pagado")
+    if (error) throw error
+    if (!data?.length) {
+      return {
+        success: false,
+        error: "Este pedido ya está marcado como pagado",
+      }
+    }
+
+    revalidatePath("/admin/dashboard/pedidos")
+    return { success: true }
+  } catch (e) {
+    console.error("Error marcando pago:", e)
+    return { success: false, error: String(e) }
   }
 }
 
