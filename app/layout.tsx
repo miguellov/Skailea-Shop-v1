@@ -25,6 +25,10 @@ export const metadata: Metadata = {
     "Tienda de belleza y fragancias en Sosúa, Puerto Plata, República Dominicana. BBW, Victoria's Secret, Perfumes Árabes y más. Pedidos por WhatsApp.",
   keywords:
     "skailea shop, perfumes, BBW, Victoria Secret, Sosúa, Puerto Plata, República Dominicana",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
   openGraph: {
     type: "website",
     locale: "es_DO",
@@ -32,14 +36,7 @@ export const metadata: Metadata = {
     siteName: "Skailea Shop",
     title: "Skailea Shop | Tu Aroma Deja Huella",
     description: ogDescription,
-    images: [
-      {
-        url: "/logo.png",
-        width: 512,
-        height: 512,
-        alt: "Skailea Shop",
-      },
-    ],
+    images: [{ url: "/logo.png", width: 500, height: 500, alt: "Skailea Shop" }],
   },
   twitter: {
     card: "summary_large_image",
