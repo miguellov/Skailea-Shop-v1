@@ -13,6 +13,7 @@ import type {
   Order,
   OrderLineItem,
   OrderStatus,
+  PaymentMethod,
 } from "@/lib/types"
 
 const ORDER_STATUSES: OrderStatus[] = [
@@ -25,6 +26,14 @@ const ORDER_STATUSES: OrderStatus[] = [
 function parseDeliveryType(raw: unknown): DeliveryType {
   const s = String(raw ?? "").trim().toLowerCase()
   return s === "retiro" ? "retiro" : "envio"
+}
+
+function parsePaymentMethod(raw: unknown): PaymentMethod | null {
+  const s = String(raw ?? "").trim().toLowerCase()
+  if (s === "efectivo" || s === "transferencia" || s === "tarjeta") {
+    return s as PaymentMethod
+  }
+  return null
 }
 
 function mapOrder(row: Record<string, unknown>): Order {
@@ -59,6 +68,13 @@ function mapOrder(row: Record<string, unknown>): Order {
     total: Number(row.total ?? 0),
     status,
     notes: row.notes == null ? null : String(row.notes),
+    paid: row.paid === true,
+    payment_method: parsePaymentMethod(row.payment_method),
+    paid_at: row.paid_at == null ? null : String(row.paid_at),
+    invoice_number:
+      row.invoice_number == null || String(row.invoice_number).trim() === ""
+        ? null
+        : String(row.invoice_number),
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   }

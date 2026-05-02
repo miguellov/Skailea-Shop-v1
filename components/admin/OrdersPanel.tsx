@@ -8,6 +8,7 @@ import {
   updateOrderNotes,
 } from "@/app/admin/order-actions"
 import { ManualOrderModal } from "@/components/admin/ManualOrderModal"
+import { OrderInvoiceControls } from "@/components/admin/OrderInvoiceControls"
 import { OrderDetailModal } from "@/components/admin/OrderDetailModal"
 import { useAdminProducts } from "@/components/admin/AdminProductsContext"
 import { getOrderStatusNotifyMessage } from "@/lib/order-notify-messages"
@@ -175,7 +176,7 @@ export function OrdersPanel({ initialOrders }: Props) {
                   <div>
                     <p className="font-semibold text-skailea-deep">{o.customer_name}</p>
                     <p className="text-sm text-skailea-rose">{o.customer_phone}</p>
-                    <p className="mt-2">
+                    <p className="mt-2 flex flex-wrap gap-2">
                       {o.delivery_type === "retiro" ? (
                         <span className="inline-flex items-center gap-1 rounded-full border border-emerald-600/35 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
                           🏪 Retiro
@@ -183,6 +184,11 @@ export function OrdersPanel({ initialOrders }: Props) {
                       ) : (
                         <span className="inline-flex items-center gap-1 rounded-full border border-sky-600/35 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold text-sky-900">
                           🚚 Envío
+                        </span>
+                      )}
+                      {o.paid && (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-emerald-600/40 bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-900">
+                          ✅ PAGADO
                         </span>
                       )}
                     </p>
@@ -248,6 +254,8 @@ export function OrdersPanel({ initialOrders }: Props) {
                     placeholder="Notas internas…"
                   />
                 </label>
+
+                <OrderInvoiceControls order={o} />
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {nextLabel && (

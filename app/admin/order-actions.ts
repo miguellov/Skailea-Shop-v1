@@ -7,6 +7,7 @@ import type {
   Order,
   OrderLineItem,
   OrderStatus,
+  PaymentMethod,
 } from "@/lib/types"
 
 export type SubmitStoreOrderInput = {
@@ -31,9 +32,18 @@ function parseDeliveryType(raw: unknown): DeliveryType {
   return s === "retiro" ? "retiro" : "envio"
 }
 
+function parsePaymentMethod(raw: unknown): PaymentMethod | null {
+  const s = String(raw ?? "").trim().toLowerCase()
+  if (s === "efectivo" || s === "transferencia" || s === "tarjeta") {
+    return s as PaymentMethod
+  }
+  return null
+}
+
 function mapOrderRow(row: Record<string, unknown>): Order {
   const rawDel = row.delivery_address
   const rawDelNotes = row.delivery_notes
+  const rawInv = row.invoice_number
   return {
     id: String(row.id),
     customer_name: String(row.customer_name),
@@ -51,6 +61,13 @@ function mapOrderRow(row: Record<string, unknown>): Order {
     total: Number(row.total),
     status: row.status as OrderStatus,
     notes: row.notes == null ? null : String(row.notes),
+    paid: row.paid === true,
+    payment_method: parsePaymentMethod(row.payment_method),
+    paid_at: row.paid_at == null ? null : String(row.paid_at),
+    invoice_number:
+      rawInv == null || String(rawInv).trim() === ""
+        ? null
+        : String(rawInv),
     created_at: String(row.created_at),
     updated_at: String(row.updated_at),
   }
@@ -224,6 +241,62 @@ export async function deleteOrder(id: string): Promise<void> {
   const sb = createServiceRoleClient()
   const { error } = await sb.from("orders").delete().eq("id", id)
   if (error) throw new Error(error.message)
+}
+
+async function allocateNextInvoiceNumber(sb: ReturnType<
+  typeof createServiceRoleClient
+>): Promise<string> {
+  const { data, error } = await sb
+    .from("orders")
+    .select("invoice_number")
+    .not("invoice_number", "is", null)
+  if (error) throw new Error(error.message)
+  let max = 0
+  for (const r of data ?? []) {
+    const inv = String((r as { invoice_number: string }).invoice_number ?? "")
+    const m = inv.match(/^SKL-(\d+)$/i)
+    if (m) max = Math.max(max, parseInt(m[1], 10))
+  }
+  return `SKL-${String(max + 1).padStart(4, "0")}`
+}
+
+/** Marca pago, asigna número de factura SKL-XXXX y fecha de pago */
+export async function markOrderAsPaid(
+  id: string,
+  paymentMethod: PaymentMethod
+): Promise<void> {
+  const sb = createServiceRoleClient()
+  const { data: existing, error: fe } = await sb
+    .from("orders")
+    .select("id,paid")
+    .eq("id", id)
+    .maybeSingle()
+  if (fe) throw new Error(fe.message)
+  if (!existing) throw new Error("Pedido no encontrado")
+  if ((existing as { paid?: boolean }).paid === true) {
+    throw new Error("Este pedido ya está marcado como pagado")
+  }
+
+  const invoiceNumber = await allocateNextInvoiceNumber(sb)
+  const paidAt = new Date().toISOString()
+
+  const { data, error } = await sb
+    .from("orders")
+    .update({
+      paid: true,
+      payment_method: paymentMethod,
+      paid_at: paidAt,
+      invoice_number: invoiceNumber,
+      updated_at: paidAt,
+    })
+    .eq("id", id)
+    .eq("paid", false)
+    .select("id")
+
+  if (error) throw new Error(error.message)
+  if (!data?.length) {
+    throw new Error("Este pedido ya está marcado como pagado")
+  }
 }
 
 export async function createOrder(input: {

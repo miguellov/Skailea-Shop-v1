@@ -43,6 +43,9 @@ export type OrderStatus = "nuevo" | "preparando" | "despachado" | "entregado"
 /** Cómo recibe el pedido el cliente (columna `delivery_type` en Supabase) */
 export type DeliveryType = "envio" | "retiro"
 
+/** Método de pago al marcar pedido como pagado */
+export type PaymentMethod = "efectivo" | "transferencia" | "tarjeta"
+
 export type OrderLineItem = {
   product_id: string
   name: string
@@ -66,6 +69,10 @@ export type Order = {
   status: OrderStatus
   /** Notas internas / sistema (p. ej. precio por mayor) */
   notes: string | null
+  paid: boolean
+  payment_method: PaymentMethod | null
+  paid_at: string | null
+  invoice_number: string | null
   created_at: string
   updated_at: string
 }

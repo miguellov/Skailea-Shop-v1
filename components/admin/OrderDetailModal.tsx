@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect } from "react"
+import { OrderInvoiceControls } from "@/components/admin/OrderInvoiceControls"
+import { paymentMethodLabel } from "@/lib/invoice-utils"
 import { RETIRO_LOCATION_FULL } from "@/lib/shipping-copy"
 import type { Order, OrderStatus } from "@/lib/types"
 import { formatPriceDOP } from "@/lib/utils"
@@ -80,7 +82,7 @@ export function OrderDetailModal({ order, onClose }: Props) {
           <div className="rounded-xl border border-skailea-blush/40 bg-white p-3">
             <p className="font-semibold text-skailea-deep">{order.customer_name}</p>
             <p className="text-sm text-skailea-rose">{order.customer_phone}</p>
-            <p className="mt-2">
+            <p className="mt-2 flex flex-wrap gap-2">
               {order.delivery_type === "retiro" ? (
                 <span className="inline-flex items-center gap-1 rounded-full border border-emerald-600/35 bg-emerald-50 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-800">
                   🏪 Retiro
@@ -88,6 +90,11 @@ export function OrderDetailModal({ order, onClose }: Props) {
               ) : (
                 <span className="inline-flex items-center gap-1 rounded-full border border-sky-600/35 bg-sky-50 px-2.5 py-0.5 text-[11px] font-semibold text-sky-900">
                   🚚 Envío
+                </span>
+              )}
+              {order.paid && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-600/40 bg-emerald-100 px-2.5 py-0.5 text-[11px] font-bold text-emerald-900">
+                  ✅ PAGADO
                 </span>
               )}
             </p>
@@ -156,6 +163,31 @@ export function OrderDetailModal({ order, onClose }: Props) {
           <p className="mt-3 text-right font-serif text-xl font-bold text-skailea-deep">
             Total {formatPriceDOP(order.total)}
           </p>
+
+          {order.paid && (
+            <p className="mt-3 rounded-xl border border-emerald-600/25 bg-emerald-50/80 px-3 py-2 text-xs text-skailea-deep">
+              <span className="font-semibold">Pago: </span>
+              {order.payment_method
+                ? paymentMethodLabel(order.payment_method)
+                : "—"}
+              {order.invoice_number && (
+                <>
+                  {" "}
+                  · <span className="font-semibold">{order.invoice_number}</span>
+                </>
+              )}
+              {order.paid_at && (
+                <span className="block text-skailea-charcoal/75">
+                  {new Date(order.paid_at).toLocaleString("es-DO", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </span>
+              )}
+            </p>
+          )}
+
+          <OrderInvoiceControls order={order} />
 
           <h3 className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-skailea-gold">
             Historial de estados
