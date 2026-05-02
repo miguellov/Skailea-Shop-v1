@@ -1,6 +1,31 @@
 import { createClient } from "@supabase/supabase-js"
 
 /**
+ * Cliente con clave anónima (`anon`). Respeta RLS; usar en server actions
+ * invocados desde la tienda pública (p. ej. insertar pedidos).
+ */
+export function createPublicServerClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+  const anon =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ??
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim() ??
+    ""
+
+  if (!url || !anon) {
+    throw new Error(
+      "Faltan NEXT_PUBLIC_SUPABASE_URL o NEXT_PUBLIC_SUPABASE_ANON_KEY en .env.local"
+    )
+  }
+
+  return createClient(url, anon, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  })
+}
+
+/**
  * Cliente con clave secreta (service role). Solo importar desde Server Actions,
  * Route Handlers o Server Components que no se serialicen al cliente.
  * Bypassa RLS.

@@ -1,6 +1,9 @@
 "use server"
 
-import { createServiceRoleClient } from "@/lib/supabase-server"
+import {
+  createPublicServerClient,
+  createServiceRoleClient,
+} from "@/lib/supabase-server"
 import { triggerOrderNotificationFetch } from "@/lib/order-notify"
 import type {
   DeliveryType,
@@ -81,11 +84,11 @@ function utcDayBounds(): { start: string; end: string } {
   return { start: start.toISOString(), end: end.toISOString() }
 }
 
-/** Pedido desde la tienda pública (WhatsApp). */
+/** Pedido desde la tienda pública (WhatsApp). Insert con rol `anon` (RLS). */
 export async function submitStoreOrder(
   input: SubmitStoreOrderInput
 ): Promise<void> {
-  const sb = createServiceRoleClient()
+  const sb = createPublicServerClient()
   const name = input.customer_name.trim()
   const phone = input.customer_phone.replace(/\D/g, "")
   if (!name || !phone) {
@@ -108,7 +111,7 @@ export async function submitStoreOrder(
   const deliveryNotes =
     input.delivery_notes?.trim() ? input.delivery_notes.trim() : null
 
-  const { error } = await sb.from("orders").insert({
+  const orderData = {
     customer_name: name,
     customer_phone: phone,
     delivery_type: dtype,
@@ -116,9 +119,14 @@ export async function submitStoreOrder(
     delivery_notes: deliveryNotes,
     items: input.items,
     total: input.total,
-    status: "nuevo",
+    status: "nuevo" as const,
     notes: input.notes ?? null,
-  })
+  }
+
+  const { error } = await sb.from("orders").insert(orderData)
+
+  console.log("Guardando pedido:", orderData)
+  console.log("Error si hay:", error)
 
   if (error) throw new Error(error.message)
 
