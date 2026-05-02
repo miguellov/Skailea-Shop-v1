@@ -1,6 +1,7 @@
 "use server"
 
 import { createServiceRoleClient } from "@/lib/supabase-server"
+import { triggerOrderNotificationFetch } from "@/lib/order-notify"
 import type {
   Order,
   OrderLineItem,
@@ -67,6 +68,23 @@ export async function submitStoreOrder(
   })
 
   if (error) throw new Error(error.message)
+
+  try {
+    await triggerOrderNotificationFetch({
+      customer_name: name,
+      customer_phone_display: input.customer_phone.trim(),
+      items: input.items.map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+        line_total: i.line_total,
+      })),
+      total: input.total,
+      notes: input.notes ?? null,
+    })
+  } catch {
+    /* el fetch interno ya es tolerante; capa extra por si cambia la impl. */
+  }
 }
 
 export async function getOrders(): Promise<Order[]> {
@@ -218,4 +236,21 @@ export async function createOrder(input: {
     notes: input.notes,
   })
   if (error) throw new Error(error.message)
+
+  try {
+    await triggerOrderNotificationFetch({
+      customer_name: input.customer_name.trim(),
+      customer_phone_display: input.customer_phone.trim(),
+      items: items.map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+        line_total: i.line_total,
+      })),
+      total,
+      notes: input.notes,
+    })
+  } catch {
+    /* no bloquear pedido manual */
+  }
 }
