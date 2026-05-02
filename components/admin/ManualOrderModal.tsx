@@ -1,9 +1,12 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { createOrder } from "@/app/admin/order-actions"
-import type { Product } from "@/lib/types"
+import type { DeliveryType, Product } from "@/lib/types"
 import { formatPriceDOP, formatRdCartMoney } from "@/lib/utils"
+
+const TYPE_BTN_BASE =
+  "flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-3 text-center text-sm font-semibold leading-snug transition focus:outline-none focus-visible:ring-2 focus-visible:ring-skailea-gold/60 focus-visible:ring-offset-2"
 
 type Line = { product_id: string; quantity: number }
 
@@ -17,11 +20,21 @@ type Props = {
 export function ManualOrderModal({ open, onClose, products, onSaved }: Props) {
   const [customerName, setCustomerName] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>("envio")
+  const [addressFull, setAddressFull] = useState("")
+  const [provinceCity, setProvinceCity] = useState("")
   const [notes, setNotes] = useState("")
   const [lines, setLines] = useState<Line[]>([])
   const [pickId, setPickId] = useState("")
   const [pickQty, setPickQty] = useState(1)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    setDeliveryType("envio")
+    setAddressFull("")
+    setProvinceCity("")
+  }, [open])
 
   const activeProducts = useMemo(
     () => [...products].filter((p) => p.active).sort((a, b) => a.name.localeCompare(b.name)),
@@ -42,6 +55,11 @@ export function ManualOrderModal({ open, onClose, products, onSaved }: Props) {
   }, [lines, byId])
 
   if (!open) return null
+
+  const selectedType =
+    "border-skailea-gold/70 bg-gradient-to-br from-skailea-blush/45 to-white shadow-inner text-skailea-deep"
+  const idleType =
+    "border-skailea-blush/60 bg-white/90 text-skailea-charcoal/90 hover:border-skailea-gold/40 hover:bg-skailea-blush/15"
 
   function addLine() {
     if (!pickId) return
@@ -76,16 +94,32 @@ export function ManualOrderModal({ open, onClose, products, onSaved }: Props) {
       window.alert("Añade al menos un producto")
       return
     }
+    if (
+      deliveryType === "envio" &&
+      (!addressFull.trim() || !provinceCity.trim())
+    ) {
+      window.alert("Completa la dirección y provincia/ciudad para envío a domicilio")
+      return
+    }
+    const deliveryAddressMultiline =
+      deliveryType === "envio"
+        ? `${addressFull.trim()}\n${provinceCity.trim()}`
+        : null
     setSaving(true)
     try {
       await createOrder({
         customer_name: customerName.trim(),
         customer_phone: customerPhone.trim(),
+        delivery_type: deliveryType,
+        delivery_address: deliveryAddressMultiline,
         lines,
         notes: notes.trim() || null,
       })
       setCustomerName("")
       setCustomerPhone("")
+      setAddressFull("")
+      setProvinceCity("")
+      setDeliveryType("envio")
       setNotes("")
       setLines([])
       onSaved()
@@ -131,6 +165,63 @@ export function ManualOrderModal({ open, onClose, products, onSaved }: Props) {
               onChange={(e) => setCustomerPhone(e.target.value)}
             />
           </label>
+
+          <div>
+            <p className="text-sm font-medium text-skailea-deep">Tipo de entrega</p>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                aria-pressed={deliveryType === "envio"}
+                onClick={() => setDeliveryType("envio")}
+                className={`${TYPE_BTN_BASE} ${deliveryType === "envio" ? selectedType : idleType}`}
+              >
+                🚚 Envío a domicilio
+              </button>
+              <button
+                type="button"
+                aria-pressed={deliveryType === "retiro"}
+                onClick={() => setDeliveryType("retiro")}
+                className={`${TYPE_BTN_BASE} ${deliveryType === "retiro" ? selectedType : idleType}`}
+              >
+                🏪 Retiro en tienda
+              </button>
+            </div>
+          </div>
+
+          {deliveryType === "envio" && (
+            <>
+              <label className="block text-sm font-medium text-skailea-deep">
+                Dirección completa
+                <textarea
+                  required={deliveryType === "envio"}
+                  rows={3}
+                  className="mt-1 w-full rounded-xl border border-skailea-blush/60 bg-white px-3 py-2 text-skailea-deep outline-none focus:ring-2 focus:ring-skailea-gold/60"
+                  value={addressFull}
+                  onChange={(e) => setAddressFull(e.target.value)}
+                  placeholder="Calle, número, referencias…"
+                />
+              </label>
+              <label className="block text-sm font-medium text-skailea-deep">
+                Provincia / Ciudad
+                <input
+                  required={deliveryType === "envio"}
+                  className="mt-1 w-full rounded-xl border border-skailea-blush/60 bg-white px-3 py-2 text-skailea-deep outline-none focus:ring-2 focus:ring-skailea-gold/60"
+                  value={provinceCity}
+                  onChange={(e) => setProvinceCity(e.target.value)}
+                  placeholder="Ej. Puerto Plata / Sosúa"
+                />
+              </label>
+            </>
+          )}
+
+          {deliveryType === "retiro" && (
+            <div className="rounded-xl border border-emerald-600/25 bg-emerald-50/90 px-3 py-3 text-sm text-skailea-deep">
+              <p className="font-medium">
+                📍 El cliente retira en Sosúa, Puerto Plata
+              </p>
+            </div>
+          )}
+
           <label className="block text-sm font-medium text-skailea-deep">
             Notas
             <textarea

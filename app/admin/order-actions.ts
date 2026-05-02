@@ -229,11 +229,25 @@ export async function deleteOrder(id: string): Promise<void> {
 export async function createOrder(input: {
   customer_name: string
   customer_phone: string
+  delivery_type: DeliveryType
+  /** Para envío: texto guardado en Supabase (incl. provincia/ciudad). Retiro: null */
+  delivery_address: string | null
   lines: { product_id: string; quantity: number }[]
   notes: string | null
 }): Promise<void> {
   const sb = createServiceRoleClient()
   if (!input.lines.length) throw new Error("Sin líneas")
+
+  const dtype: DeliveryType =
+    input.delivery_type === "retiro" ? "retiro" : "envio"
+  let deliveryAddr: string | null = null
+  if (dtype === "envio") {
+    const trimmed = (input.delivery_address ?? "").trim()
+    if (!trimmed) {
+      throw new Error("La dirección es obligatoria para envío a domicilio")
+    }
+    deliveryAddr = trimmed
+  }
 
   const ids = Array.from(new Set(input.lines.map((l) => l.product_id)))
   const { data: products, error: pe } = await sb
@@ -269,8 +283,8 @@ export async function createOrder(input: {
   const { error } = await sb.from("orders").insert({
     customer_name: input.customer_name.trim(),
     customer_phone: phone,
-    delivery_type: "retiro",
-    delivery_address: null,
+    delivery_type: dtype,
+    delivery_address: deliveryAddr,
     delivery_notes: null,
     items,
     total,
@@ -283,8 +297,8 @@ export async function createOrder(input: {
     await triggerOrderNotificationFetch({
       customer_name: input.customer_name.trim(),
       customer_phone_display: input.customer_phone.trim(),
-      delivery_type: "retiro",
-      delivery_address: null,
+      delivery_type: dtype,
+      delivery_address: deliveryAddr,
       delivery_notes: null,
       items: items.map((i) => ({
         name: i.name,
