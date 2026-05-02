@@ -7,9 +7,15 @@ import {
   formatCartLineSubtotal,
   useCart,
 } from "@/components/tienda/CartContext"
-import { CartCheckoutModal } from "@/components/tienda/CartCheckoutModal"
+import { ContactOrderModal } from "@/components/tienda/ContactOrderModal"
+import { saveCustomerContact } from "@/lib/contact-prefs"
+import type { OrderLineItem } from "@/lib/types"
 import { PAYPAL_BUTTON_DISABLED } from "@/lib/paypal-store"
-import { formatRdCartMoney } from "@/lib/utils"
+import {
+  buildCartOrderWhatsAppMessage,
+  formatRdCartMoney,
+  whatsappUrl,
+} from "@/lib/utils"
 
 export function CartDrawer() {
   const {
@@ -21,7 +27,7 @@ export function CartDrawer() {
     decrementQty,
     removeLine,
     clearCart,
-    getOrderWhatsAppHref,
+    whatsappDigits,
   } = useCart()
   const [checkoutOpen, setCheckoutOpen] = useState(false)
 
@@ -30,36 +36,24 @@ export function CartDrawer() {
     const prev = document.body.style.overflow
     document.body.style.overflow = "hidden"
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeDrawer()
+      if (e.key !== "Escape") return
+      if (checkoutOpen) {
+        setCheckoutOpen(false)
+        e.preventDefault()
+        return
+      }
+      closeDrawer()
     }
     window.addEventListener("keydown", onKey)
     return () => {
       document.body.style.overflow = prev
       window.removeEventListener("keydown", onKey)
     }
-  }, [drawerOpen, closeDrawer])
+  }, [drawerOpen, closeDrawer, checkoutOpen])
 
   if (!drawerOpen) return null
 
-  const waHref = getOrderWhatsAppHref()
-
-  async function handleCheckoutSubmit(customerName: string, customerPhone: string) {
-    const href = getOrderWhatsAppHref()
-    await submitStoreOrder({
-      customer_name: customerName,
-      customer_phone: customerPhone,
-      lines: lines.map((l) => ({
-        product_id: l.productId,
-        quantity: l.quantity,
-      })),
-    })
-    setCheckoutOpen(false)
-    if (href && href !== "#") {
-      window.open(href, "_blank", "noopener,noreferrer")
-    }
-    clearCart()
-    closeDrawer()
-  }
+  const canWhatsApp = Boolean(whatsappDigits.replace(/\D/g, ""))
 
   return (
     <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label="Carrito">
@@ -173,7 +167,7 @@ export function CartDrawer() {
                 </span>
               </div>
               <div className="flex flex-col gap-2">
-                {waHref ? (
+                {canWhatsApp ? (
                   <button
                     type="button"
                     onClick={() => setCheckoutOpen(true)}
@@ -223,11 +217,60 @@ export function CartDrawer() {
         )}
       </aside>
 
-      <CartCheckoutModal
+      <ContactOrderModal
         open={checkoutOpen}
         onClose={() => setCheckoutOpen(false)}
-        onSubmit={handleCheckoutSubmit}
-        totalLabel={formatRdCartMoney(total)}
+        variant="cart"
+        cartLines={lines}
+        onCompleted={async ({
+          customerName,
+          customerPhone,
+          wantsMayor,
+        }) => {
+          const items: OrderLineItem[] = lines.map((l) => {
+            const unit = wantsMayor ? l.product.price_mayor : l.product.price
+            const q = l.quantity
+            return {
+              product_id: l.productId,
+              name: l.product.name,
+              quantity: q,
+              unit_price: unit,
+              line_total: unit * q,
+            }
+          })
+          const orderTotal = items.reduce((s, i) => s + i.line_total, 0)
+          await submitStoreOrder({
+            customer_name: customerName,
+            customer_phone: customerPhone,
+            items,
+            total: orderTotal,
+            notes: wantsMayor
+              ? "Cliente indicó precio por mayor en el pedido."
+              : null,
+          })
+          const msg = buildCartOrderWhatsAppMessage({
+            customerName,
+            customerPhoneDisplay: customerPhone.trim(),
+            lines: items.map((i) => ({
+              quantity: i.quantity,
+              name: i.name,
+              lineLabel: formatRdCartMoney(i.line_total),
+            })),
+            totalLabel: formatRdCartMoney(orderTotal),
+            wantsMayor,
+          })
+          const href = whatsappUrl(whatsappDigits, msg)
+          saveCustomerContact({
+            name: customerName,
+            phone: customerPhone,
+          })
+          if (href && href !== "#") {
+            window.open(href, "_blank", "noopener,noreferrer")
+          }
+          clearCart()
+          closeDrawer()
+          setCheckoutOpen(false)
+        }}
       />
     </div>
   )

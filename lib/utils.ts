@@ -54,6 +54,55 @@ export function buildCartWhatsAppMessage(lines: CartLineInput[]): string {
   return `Hola! Quiero hacer un pedido:\n\n${body}\n\nTotal: ${formatRdCartMoney(total)}\n\nPor favor confirmar disponibilidad 🙏`
 }
 
+/** Mensaje tras el modal de contacto — pedido de un solo producto */
+export function buildProductOrderWhatsAppMessage(params: {
+  customerName: string
+  customerPhoneDisplay: string
+  productName: string
+  priceLabel: string
+  wantsMayor: boolean
+  mayorPriceLabel?: string
+  mayorMin?: number
+}): string {
+  let msg = `Hola Skailea Shop! 👋
+Mi nombre es ${params.customerName}
+Me interesa: ${params.productName} - ${params.priceLabel}
+Mi WhatsApp: ${params.customerPhoneDisplay}`
+  if (
+    params.wantsMayor &&
+    params.mayorPriceLabel &&
+    params.mayorMin != null
+  ) {
+    msg += `\n\nPrecio por mayor: ${params.mayorPriceLabel} (mín. ${params.mayorMin} uds.)`
+  }
+  return msg
+}
+
+/** Mensaje tras el modal — pedido desde carrito */
+export function buildCartOrderWhatsAppMessage(params: {
+  customerName: string
+  customerPhoneDisplay: string
+  lines: Array<{ quantity: number; name: string; lineLabel: string }>
+  totalLabel: string
+  wantsMayor: boolean
+}): string {
+  const body = params.lines
+    .map((l) => `- ${l.quantity}x ${l.name} — ${l.lineLabel}`)
+    .join("\n")
+  let msg = `Hola Skailea Shop! 👋
+Mi nombre es ${params.customerName}
+
+Pedido:
+${body}
+
+Total: ${params.totalLabel}
+Mi WhatsApp: ${params.customerPhoneDisplay}`
+  if (params.wantsMayor) {
+    msg += `\n\n(Solicito precios por mayor donde aplique.)`
+  }
+  return msg
+}
+
 /** URLs para mostrar en carrusel: prioriza image_urls; si viene vacío, image_url */
 export function getProductGalleryImages(p: {
   image_url: string | null

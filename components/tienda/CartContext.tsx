@@ -34,6 +34,8 @@ type CartContextValue = {
   removeLine: (productId: string) => void
   clearCart: () => void
   getOrderWhatsAppHref: () => string | null
+  /** Solo dígitos / formato env para wa.me */
+  whatsappDigits: string
 }
 
 const CartContext = createContext<CartContextValue | null>(null)
@@ -139,6 +141,7 @@ export function CartProvider({
       removeLine,
       clearCart,
       getOrderWhatsAppHref,
+      whatsappDigits,
     }),
     [
       lines,
@@ -153,6 +156,7 @@ export function CartProvider({
       removeLine,
       clearCart,
       getOrderWhatsAppHref,
+      whatsappDigits,
     ]
   )
 

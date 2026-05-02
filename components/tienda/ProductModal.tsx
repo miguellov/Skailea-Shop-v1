@@ -1,14 +1,18 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { submitStoreOrder } from "@/app/admin/order-actions"
 import { useCart } from "@/components/tienda/CartContext"
+import { ContactOrderModal } from "@/components/tienda/ContactOrderModal"
 import { ProductImageCarousel } from "@/components/tienda/ProductImageCarousel"
 import { ProductImageLightbox } from "@/components/tienda/ProductImageLightbox"
-import type { ProductPublic } from "@/lib/types"
+import { saveCustomerContact } from "@/lib/contact-prefs"
+import type { OrderLineItem, ProductPublic } from "@/lib/types"
 import {
+  buildProductOrderWhatsAppMessage,
   formatPriceDOP,
+  formatRdCartMoney,
   getProductGalleryImages,
-  whatsappOrderMessage,
   whatsappUrl,
 } from "@/lib/utils"
 
@@ -35,15 +39,22 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
   const { addItem, openDrawer } = useCart()
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [contactOpen, setContactOpen] = useState(false)
 
   useEffect(() => {
     setLightboxOpen(false)
+    setContactOpen(false)
   }, [product?.id])
 
   useEffect(() => {
     if (!product) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return
+      if (contactOpen) {
+        setContactOpen(false)
+        e.preventDefault()
+        return
+      }
       if (lightboxOpen) {
         setLightboxOpen(false)
         e.preventDefault()
@@ -58,19 +69,14 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
       window.removeEventListener("keydown", onKey)
       document.body.style.overflow = prev
     }
-  }, [product, onClose, lightboxOpen])
+  }, [product, onClose, lightboxOpen, contactOpen])
 
   if (!product) return null
 
   const out = product.stock === 0
   const priceLabel = formatPriceDOP(product.price)
   const gallery = getProductGalleryImages(product)
-  const waLink = whatsappDigits
-    ? whatsappUrl(
-        whatsappDigits,
-        whatsappOrderMessage(product.name, priceLabel)
-      )
-    : null
+  const canWhatsApp = Boolean(whatsappDigits.replace(/\D/g, ""))
 
   return (
     <>
@@ -173,24 +179,20 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
             >
               Cerrar
             </button>
-            {waLink ? (
-              <a
-                href={out ? "#" : waLink}
-                onClick={(e) => {
-                  if (out) e.preventDefault()
-                }}
+            {canWhatsApp ? (
+              <button
+                type="button"
+                disabled={out}
+                onClick={() => !out && setContactOpen(true)}
                 className={`order-1 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-sm transition sm:order-2 ${
                   out
-                    ? "pointer-events-none cursor-not-allowed bg-skailea-charcoal/35 text-skailea-cream/80"
+                    ? "cursor-not-allowed bg-skailea-charcoal/35 text-skailea-cream/80"
                     : "border-2 border-skailea-gold/50 bg-white text-[#128C7E] shadow-sm hover:bg-skailea-cream"
                 }`}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-disabled={out}
               >
                 <WhatsAppIcon className="h-5 w-5 shrink-0 text-[#25D366]" />
                 WhatsApp
-              </a>
+              </button>
             ) : (
               <p className="order-1 text-center text-xs text-skailea-rose sm:order-2 sm:text-right">
                 Configura NEXT_PUBLIC_WHATSAPP_NUMBER en .env.local para pedir por WhatsApp.
@@ -207,6 +209,60 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
       urls={gallery}
       initialIndex={lightboxIndex}
       alt={product.name}
+    />
+
+    <ContactOrderModal
+      open={contactOpen}
+      onClose={() => setContactOpen(false)}
+      variant="product"
+      product={product}
+      onCompleted={async ({
+        customerName,
+        customerPhone,
+        wantsMayor,
+      }) => {
+        const unitPrice = wantsMayor ? product.price_mayor : product.price
+        const items: OrderLineItem[] = [
+          {
+            product_id: product.id,
+            name: product.name,
+            quantity: 1,
+            unit_price: unitPrice,
+            line_total: unitPrice,
+          },
+        ]
+        await submitStoreOrder({
+          customer_name: customerName,
+          customer_phone: customerPhone,
+          items,
+          total: unitPrice,
+          notes: wantsMayor
+            ? "Cliente indicó interés en precio por mayor."
+            : null,
+        })
+        const priceStr = formatRdCartMoney(unitPrice)
+        const msg = buildProductOrderWhatsAppMessage({
+          customerName,
+          customerPhoneDisplay: customerPhone.trim(),
+          productName: product.name,
+          priceLabel: priceStr,
+          wantsMayor,
+          mayorPriceLabel: wantsMayor
+            ? formatRdCartMoney(product.price_mayor)
+            : undefined,
+          mayorMin: wantsMayor ? product.mayor_min : undefined,
+        })
+        const href = whatsappUrl(whatsappDigits, msg)
+        saveCustomerContact({
+          name: customerName,
+          phone: customerPhone,
+        })
+        if (href && href !== "#") {
+          window.open(href, "_blank", "noopener,noreferrer")
+        }
+        setContactOpen(false)
+        onClose()
+      }}
     />
     </>
   )
