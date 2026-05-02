@@ -1,9 +1,7 @@
 "use client"
 
+import { WA_FLOAT_MESSAGE } from "@/lib/site"
 import { whatsappUrl } from "@/lib/utils"
-
-const WA_CONSULT_MESSAGE =
-  "Hola! Tengo una consulta sobre sus productos 🛍️"
 
 function WhatsAppGlyph({ className }: { className?: string }) {
   return (
@@ -15,7 +13,7 @@ function WhatsAppGlyph({ className }: { className?: string }) {
 
 export function WhatsAppFab({ whatsappDigits }: { whatsappDigits: string }) {
   const n = whatsappDigits.replace(/\D/g, "")
-  const href = n ? whatsappUrl(n, WA_CONSULT_MESSAGE) : null
+  const href = n ? whatsappUrl(n, WA_FLOAT_MESSAGE) : null
 
   if (!href || href === "#") {
     return null

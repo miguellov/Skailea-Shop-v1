@@ -3,11 +3,12 @@ import { PromoTicker } from "@/components/tienda/PromoTicker"
 import { StoreFooter } from "@/components/tienda/StoreFooter"
 import { TiendaShell } from "@/components/tienda/TiendaShell"
 import { getStoreCatalog } from "@/lib/catalog"
+import { getWhatsAppDigitsFromEnv } from "@/lib/site"
 
 export const dynamic = "force-dynamic"
 
 export default async function Home() {
-  const whatsappDigits = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? ""
+  const whatsappDigits = getWhatsAppDigitsFromEnv()
   const { categories, brands, products } = await getStoreCatalog()
 
   return (

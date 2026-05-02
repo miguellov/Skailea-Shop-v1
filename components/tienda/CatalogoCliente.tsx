@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react"
 import type { Brand, Category, ProductPublic } from "@/lib/types"
+import { SITE_TAGLINE } from "@/lib/site"
 import { CatalogFilters } from "@/components/tienda/CatalogFilters"
 import { ProductCard } from "@/components/tienda/ProductCard"
 import { ProductModal } from "@/components/tienda/ProductModal"
@@ -91,7 +92,7 @@ export function CatalogoCliente({
           <div className="flex flex-col items-center px-4 text-center sm:px-6">
             <StoreLogo variant="header" priority />
             <p className="mt-2 max-w-md text-[11px] font-normal leading-relaxed text-skailea-gold sm:text-xs">
-              Beauty · Fragrance · Wellness · República Dominicana
+              {SITE_TAGLINE}
             </p>
           </div>
 
