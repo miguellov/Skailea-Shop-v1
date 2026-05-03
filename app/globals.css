@@ -3,11 +3,11 @@
 @tailwind utilities;
 
 :root {
-  /* Paleta logo: azul swatch (#009EE8 / #0D98DE) + rosa suave */
+  /* Paleta logo: azul cielo (#0077B6 / #009EE8) + rosa suave */
   --cream: #f5f0f8;
   --blush: #e8c4d0;
   --rose: #009ee8;
-  --deep: #0d98de;
+  --deep: #0077b6;
   --deep-end: #061440;
   --gold: #e8a0b4;
   --charcoal: #1a1a2e;
