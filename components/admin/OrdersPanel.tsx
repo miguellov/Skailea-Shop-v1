@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useCallback, useMemo, useState, useTransition } from "react"
 import {
   advanceOrderStatus,
+  cancelOrder,
   deleteOrder,
   updateOrderNotes,
 } from "@/app/admin/order-actions"
@@ -25,6 +26,7 @@ const TABS: { key: OrderStatus | "todos"; label: string }[] = [
   { key: "preparando", label: "Preparando" },
   { key: "despachado", label: "Despachados" },
   { key: "entregado", label: "Entregados" },
+  { key: "cancelado", label: "Cancelados" },
   { key: "todos", label: "Todos" },
 ]
 
@@ -36,6 +38,9 @@ function nextActionLabel(status: OrderStatus): string | null {
       return "→ Despachado"
     case "despachado":
       return "→ Entregado"
+    case "entregado":
+    case "cancelado":
+      return null
     default:
       return null
   }
@@ -49,9 +54,15 @@ function statusBadgeClass(status: OrderStatus) {
       return "bg-skailea-gold/30 text-skailea-deep border-skailea-gold/50"
     case "despachado":
       return "bg-skailea-blush/50 text-skailea-deep border-skailea-blush/60"
+    case "cancelado":
+      return "border-amber-700/35 bg-amber-100 text-amber-950"
     default:
       return "bg-skailea-deep/10 text-skailea-deep border-skailea-deep/20"
   }
+}
+
+function canCancelOrder(status: OrderStatus): boolean {
+  return status === "nuevo" || status === "preparando" || status === "despachado"
 }
 
 type Props = {
@@ -107,6 +118,29 @@ export function OrdersPanel({ initialOrders }: Props) {
       return
     }
     refreshOrders()
+  }
+
+  async function onCancelOrder(o: Order) {
+    if (
+      !window.confirm(
+        "¿Cancelar este pedido? Si ya estaba despachado, se devolverá el stock al inventario."
+      )
+    ) {
+      return
+    }
+    try {
+      const result = await cancelOrder(o.id)
+      if (!result.success) {
+        window.alert(result.error)
+        return
+      }
+      refreshOrders()
+      if (result.whatsappNotifyUrl) {
+        window.open(result.whatsappNotifyUrl, "_blank", "noopener,noreferrer")
+      }
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Error al cancelar")
+    }
   }
 
   function customerNotifyHref(o: Order): string | null {
@@ -303,6 +337,15 @@ export function OrdersPanel({ initialOrders }: Props) {
                       className="rounded-full bg-skailea-gold/40 px-4 py-2 text-xs font-semibold text-skailea-deep hover:bg-skailea-gold/55 sm:text-sm"
                     >
                       {nextLabel}
+                    </button>
+                  )}
+                  {canCancelOrder(o.status) && (
+                    <button
+                      type="button"
+                      onClick={() => void onCancelOrder(o)}
+                      className="rounded-full border border-amber-800/40 bg-amber-50 px-4 py-2 text-xs font-semibold text-amber-950 hover:bg-amber-100 sm:text-sm"
+                    >
+                      ❌ Cancelar pedido
                     </button>
                   )}
                   {notifyHref ? (

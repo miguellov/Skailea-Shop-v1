@@ -35,6 +35,8 @@ function statusBadgeClass(status: OrderStatus) {
       return "bg-skailea-gold/30 text-skailea-deep border-skailea-gold/50"
     case "despachado":
       return "bg-skailea-blush/50 text-skailea-deep border-skailea-blush/60"
+    case "cancelado":
+      return "border-amber-700/35 bg-amber-100 text-amber-950"
     default:
       return "bg-skailea-deep/10 text-skailea-deep border-skailea-deep/20"
   }
@@ -50,6 +52,8 @@ function statusLabel(status: OrderStatus) {
       return "Despachado"
     case "entregado":
       return "Entregado"
+    case "cancelado":
+      return "Cancelado"
     default:
       return status
   }

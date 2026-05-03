@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache"
 import { createServiceRoleClient } from "@/lib/supabase-server"
 import { formatSupabaseError } from "@/lib/supabase-errors"
 import { sendOrderNotification } from "@/lib/email"
+import {
+  deductStockForOrderItems,
+  restoreStockForOrderItems,
+} from "@/lib/order-stock"
+import { getOrderCancellationWhatsappUrl } from "@/lib/order-notify-messages"
 import type {
   DeliveryType,
   Order,
@@ -35,6 +40,10 @@ export type DeleteOrderResult =
   | { success: true }
   | { success: false; error: string }
 
+export type CancelOrderResult =
+  | { success: true; whatsappNotifyUrl: string | null }
+  | { success: false; error: string }
+
 export type DashboardOrderStats = {
   newOrdersToday: number
   soldTodayDop: number
@@ -52,6 +61,21 @@ function parsePaymentMethod(raw: unknown): PaymentMethod | null {
     return s as PaymentMethod
   }
   return null
+}
+
+const VALID_ORDER_STATUSES: OrderStatus[] = [
+  "nuevo",
+  "preparando",
+  "despachado",
+  "entregado",
+  "cancelado",
+]
+
+function parseOrderStatus(raw: unknown): OrderStatus {
+  const s = String(raw ?? "").trim().toLowerCase()
+  return VALID_ORDER_STATUSES.includes(s as OrderStatus)
+    ? (s as OrderStatus)
+    : "nuevo"
 }
 
 function mapOrderRow(row: Record<string, unknown>): Order {
@@ -73,7 +97,7 @@ function mapOrderRow(row: Record<string, unknown>): Order {
         : String(rawDelNotes),
     items: (row.items as OrderLineItem[]) ?? [],
     total: Number(row.total),
-    status: row.status as OrderStatus,
+    status: parseOrderStatus(row.status),
     notes: row.notes == null ? null : String(row.notes),
     paid: row.paid === true,
     payment_method: parsePaymentMethod(row.payment_method),
@@ -267,15 +291,34 @@ const STATUS_CHAIN: Record<OrderStatus, OrderStatus | null> = {
   preparando: "despachado",
   despachado: "entregado",
   entregado: null,
+  cancelado: null,
 }
 
 export async function advanceOrderStatus(
   id: string,
   current: OrderStatus
 ): Promise<void> {
+  if (current === "entregado") {
+    throw new Error("El pedido ya está entregado")
+  }
+  if (current === "cancelado") {
+    throw new Error("Este pedido está cancelado")
+  }
   const next = STATUS_CHAIN[current]
-  if (!next) throw new Error("El pedido ya está entregado")
+  if (!next) throw new Error("No se puede avanzar el estado")
   const sb = createServiceRoleClient()
+
+  let itemsForStock: OrderLineItem[] = []
+  if (next === "despachado") {
+    const { data: ord, error: oe } = await sb
+      .from("orders")
+      .select("items")
+      .eq("id", id)
+      .maybeSingle()
+    if (oe) throw new Error(oe.message)
+    itemsForStock = (ord?.items as OrderLineItem[]) ?? []
+  }
+
   const { data, error } = await sb
     .from("orders")
     .update({
@@ -291,7 +334,114 @@ export async function advanceOrderStatus(
       "No se actualizó el estado: puede que ya haya cambiado. Recarga la página."
     )
   }
+
+  if (next === "despachado" && itemsForStock.length > 0) {
+    try {
+      await deductStockForOrderItems(sb, itemsForStock)
+    } catch (e) {
+      console.error("[advanceOrderStatus] Error descontando stock, revirtiendo estado:", e)
+      await sb
+        .from("orders")
+        .update({
+          status: "preparando",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("status", "despachado")
+      throw new Error(
+        e instanceof Error
+          ? `No se pudo actualizar inventario: ${e.message}`
+          : "No se pudo actualizar inventario; el pedido volvió a Preparando."
+      )
+    }
+  }
+
   revalidatePath("/admin/dashboard/pedidos")
+  revalidatePath("/admin/dashboard/productos")
+}
+
+/**
+ * Cancela el pedido. Si estaba en **despachado**, devuelve stock (ya descontado al despachar).
+ * No aplica a entregado / ya cancelado. Eliminar pedido no ajusta stock (ver reglas en deleteOrder).
+ */
+export async function cancelOrder(id: string): Promise<CancelOrderResult> {
+  const sb = createServiceRoleClient()
+  const { data: ord, error: fe } = await sb
+    .from("orders")
+    .select("status, items, customer_name, customer_phone")
+    .eq("id", id)
+    .maybeSingle()
+  if (fe) return { success: false, error: fe.message }
+  if (!ord) return { success: false, error: "Pedido no encontrado" }
+
+  const st = parseOrderStatus((ord as { status: unknown }).status)
+  if (st === "cancelado") {
+    return { success: false, error: "El pedido ya está cancelado" }
+  }
+  if (st === "entregado") {
+    return {
+      success: false,
+      error: "No se puede cancelar un pedido ya entregado",
+    }
+  }
+  if (st !== "nuevo" && st !== "preparando" && st !== "despachado") {
+    return { success: false, error: "Estado no válido para cancelar" }
+  }
+
+  const wasDespachado = st === "despachado"
+  const items = ((ord as { items: unknown }).items as OrderLineItem[]) ?? []
+  const customerName = String((ord as { customer_name: unknown }).customer_name ?? "")
+  const customerPhone = String((ord as { customer_phone: unknown }).customer_phone ?? "")
+
+  const { data, error } = await sb
+    .from("orders")
+    .update({
+      status: "cancelado",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .eq("status", st)
+    .select("id")
+
+  if (error) return { success: false, error: error.message }
+  if (!data?.length) {
+    return {
+      success: false,
+      error: "No se pudo cancelar (el estado pudo cambiar). Recarga la página.",
+    }
+  }
+
+  if (wasDespachado && items.length > 0) {
+    try {
+      await restoreStockForOrderItems(sb, items)
+    } catch (e) {
+      console.error("[cancelOrder] Error devolviendo stock, revirtiendo estado:", e)
+      await sb
+        .from("orders")
+        .update({
+          status: "despachado",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("status", "cancelado")
+      return {
+        success: false,
+        error:
+          e instanceof Error
+            ? e.message
+            : "Error al devolver stock; el pedido sigue en Despachado.",
+      }
+    }
+  }
+
+  revalidatePath("/admin/dashboard/pedidos")
+  revalidatePath("/admin/dashboard/productos")
+
+  const whatsappNotifyUrl = getOrderCancellationWhatsappUrl(
+    customerName,
+    customerPhone
+  )
+  return { success: true, whatsappNotifyUrl }
 }
 
 export async function updateOrderNotes(id: string, notes: string): Promise<void> {
@@ -306,6 +456,10 @@ export async function updateOrderNotes(id: string, notes: string): Promise<void>
   if (error) throw new Error(error.message)
 }
 
+/**
+ * Elimina el pedido sin tocar `products.stock`: despachado/entregado ya descontaron;
+ * nuevo/preparando nunca descontaron; cancelado ya devolvió stock al cancelar.
+ */
 export async function deleteOrder(id: string): Promise<DeleteOrderResult> {
   try {
     const supabase = createServiceRoleClient()

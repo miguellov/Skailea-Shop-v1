@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { cancelOrder } from "@/app/admin/order-actions"
 import { OrderInvoiceControls } from "@/components/admin/OrderInvoiceControls"
 import { paymentMethodLabel } from "@/lib/invoice-utils"
 import { RETIRO_LOCATION_FULL } from "@/lib/shipping-copy"
@@ -19,6 +20,11 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
   preparando: "Preparando",
   despachado: "Despachado",
   entregado: "Entregado",
+  cancelado: "Cancelado",
+}
+
+function canCancelOrderDetail(status: OrderStatus): boolean {
+  return status === "nuevo" || status === "preparando" || status === "despachado"
 }
 
 type Props = {
@@ -33,6 +39,8 @@ export function OrderDetailModal({
   onClose,
   onOrdersMutated,
 }: Props) {
+  const [cancelBusy, setCancelBusy] = useState(false)
+
   useEffect(() => {
     if (!order) return
     const onKey = (e: KeyboardEvent) => {
@@ -47,8 +55,37 @@ export function OrderDetailModal({
     }
   }, [order, onClose])
 
+  async function handleCancelOrder() {
+    if (!order) return
+    if (
+      !window.confirm(
+        "¿Cancelar este pedido? Si ya estaba despachado, se devolverá el stock al inventario."
+      )
+    ) {
+      return
+    }
+    setCancelBusy(true)
+    try {
+      const result = await cancelOrder(order.id)
+      if (!result.success) {
+        window.alert(result.error)
+        return
+      }
+      onOrdersMutated?.()
+      if (result.whatsappNotifyUrl) {
+        window.open(result.whatsappNotifyUrl, "_blank", "noopener,noreferrer")
+      }
+      onClose()
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : "Error al cancelar")
+    } finally {
+      setCancelBusy(false)
+    }
+  }
+
   if (!order) return null
 
+  const isCancelado = order.status === "cancelado"
   const currentIdx = STATUS_FLOW.indexOf(order.status)
 
   return (
@@ -202,64 +239,81 @@ export function OrderDetailModal({
             Progreso según el estado actual del pedido (las fechas por etapa se registran cuando
             avanzas el estado en el panel).
           </p>
-          <ol className="mt-3 space-y-0 border-l-2 border-skailea-blush/50 pl-4">
-            {STATUS_FLOW.map((st, i) => {
-              const done = i < currentIdx
-              const current = i === currentIdx
-              const pending = i > currentIdx
-              return (
-                <li key={st} className="relative pb-4 last:pb-0">
-                  <span
-                    className={`absolute -left-[1.15rem] top-1.5 h-2.5 w-2.5 rounded-full border-2 ${
-                      done || current
-                        ? "border-skailea-gold bg-skailea-gold"
-                        : "border-skailea-blush/60 bg-skailea-cream"
-                    }`}
-                  />
-                  <p
-                    className={`text-sm font-semibold ${
-                      current ? "text-skailea-deep" : done ? "text-skailea-deep/80" : "text-skailea-charcoal/50"
-                    }`}
-                  >
-                    {STATUS_LABEL[st]}
+          {isCancelado ? (
+            <div className="mt-3 rounded-xl border border-amber-700/30 bg-amber-50 px-3 py-3 text-sm text-amber-950">
+              <p className="font-semibold">Pedido cancelado</p>
+              <p className="mt-1 text-xs text-amber-950/90">
+                Este pedido no continúa en el flujo de entrega. Si ya se había despachado, el stock
+                fue devuelto al inventario al cancelar.
+              </p>
+              <p className="mt-2 text-xs text-skailea-charcoal/70">
+                Actualizado:{" "}
+                {new Date(order.updated_at).toLocaleString("es-DO", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                })}
+              </p>
+            </div>
+          ) : (
+            <ol className="mt-3 space-y-0 border-l-2 border-skailea-blush/50 pl-4">
+              {STATUS_FLOW.map((st, i) => {
+                const done = i < currentIdx
+                const current = i === currentIdx
+                const pending = i > currentIdx
+                return (
+                  <li key={st} className="relative pb-4 last:pb-0">
+                    <span
+                      className={`absolute -left-[1.15rem] top-1.5 h-2.5 w-2.5 rounded-full border-2 ${
+                        done || current
+                          ? "border-skailea-gold bg-skailea-gold"
+                          : "border-skailea-blush/60 bg-skailea-cream"
+                      }`}
+                    />
+                    <p
+                      className={`text-sm font-semibold ${
+                        current ? "text-skailea-deep" : done ? "text-skailea-deep/80" : "text-skailea-charcoal/50"
+                      }`}
+                    >
+                      {STATUS_LABEL[st]}
+                      {current && (
+                        <span className="ml-2 rounded-full bg-skailea-gold/35 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-skailea-deep">
+                          Actual
+                        </span>
+                      )}
+                      {done && !current && (
+                        <span className="ml-2 text-[10px] font-medium uppercase text-skailea-gold">
+                          Completado
+                        </span>
+                      )}
+                      {pending && (
+                        <span className="ml-2 text-[10px] font-medium uppercase text-skailea-charcoal/45">
+                          Pendiente
+                        </span>
+                      )}
+                    </p>
                     {current && (
-                      <span className="ml-2 rounded-full bg-skailea-gold/35 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-skailea-deep">
-                        Actual
-                      </span>
+                      <p className="mt-0.5 text-xs text-skailea-charcoal/65">
+                        Ref. actualización:{" "}
+                        {new Date(order.updated_at).toLocaleString("es-DO", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                      </p>
                     )}
-                    {done && !current && (
-                      <span className="ml-2 text-[10px] font-medium uppercase text-skailea-gold">
-                        Completado
-                      </span>
+                    {st === "nuevo" && i === 0 && (
+                      <p className="mt-0.5 text-xs text-skailea-charcoal/60">
+                        Pedido recibido:{" "}
+                        {new Date(order.created_at).toLocaleString("es-DO", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                        })}
+                      </p>
                     )}
-                    {pending && (
-                      <span className="ml-2 text-[10px] font-medium uppercase text-skailea-charcoal/45">
-                        Pendiente
-                      </span>
-                    )}
-                  </p>
-                  {current && (
-                    <p className="mt-0.5 text-xs text-skailea-charcoal/65">
-                      Ref. actualización:{" "}
-                      {new Date(order.updated_at).toLocaleString("es-DO", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
-                    </p>
-                  )}
-                  {st === "nuevo" && i === 0 && (
-                    <p className="mt-0.5 text-xs text-skailea-charcoal/60">
-                      Pedido recibido:{" "}
-                      {new Date(order.created_at).toLocaleString("es-DO", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
-                    </p>
-                  )}
-                </li>
-              )
-            })}
-          </ol>
+                  </li>
+                )
+              })}
+            </ol>
+          )}
 
           <h3 className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-skailea-gold">
             Notas internas / sistema
@@ -271,7 +325,17 @@ export function OrderDetailModal({
           </div>
         </div>
 
-        <footer className="shrink-0 border-t border-skailea-blush/40 px-4 py-3 sm:px-5">
+        <footer className="shrink-0 space-y-2 border-t border-skailea-blush/40 px-4 py-3 sm:px-5">
+          {canCancelOrderDetail(order.status) && (
+            <button
+              type="button"
+              disabled={cancelBusy}
+              onClick={() => void handleCancelOrder()}
+              className="w-full rounded-full border border-amber-800/40 bg-amber-50 py-2.5 text-sm font-semibold text-amber-950 hover:bg-amber-100 disabled:opacity-60"
+            >
+              ❌ Cancelar pedido
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}

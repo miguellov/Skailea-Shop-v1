@@ -21,6 +21,7 @@ const ORDER_STATUSES: OrderStatus[] = [
   "preparando",
   "despachado",
   "entregado",
+  "cancelado",
 ]
 
 function parseDeliveryType(raw: unknown): DeliveryType {
@@ -159,7 +160,9 @@ export async function getReportData(period: ReportPeriod): Promise<ReportPayload
     mapOrder(r as Record<string, unknown>)
   )
 
-  const soldInPeriod = periodOrders.filter((o) => o.status !== "nuevo")
+  const soldInPeriod = periodOrders.filter(
+    (o) => o.status !== "nuevo" && o.status !== "cancelado"
+  )
   const totalSoldRd = soldInPeriod.reduce((s, o) => s + o.total, 0)
   const salesOrdersCount = soldInPeriod.length
   const ordersTotal = periodOrders.length
@@ -179,7 +182,7 @@ export async function getReportData(period: ReportPeriod): Promise<ReportPayload
     const s = new Date(day.startIso).getTime()
     const e = new Date(day.endIso).getTime()
     for (const o of chartOrders) {
-      if (o.status === "nuevo") continue
+      if (o.status === "nuevo" || o.status === "cancelado") continue
       const t = new Date(o.created_at).getTime()
       if (t >= s && t <= e) total += o.total
     }

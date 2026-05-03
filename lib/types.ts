@@ -38,7 +38,12 @@ export type ProductPublic = Omit<Product, "active"> & {
   brand_name: string | null
 }
 
-export type OrderStatus = "nuevo" | "preparando" | "despachado" | "entregado"
+export type OrderStatus =
+  | "nuevo"
+  | "preparando"
+  | "despachado"
+  | "entregado"
+  | "cancelado"
 
 /** Cómo recibe el pedido el cliente (columna `delivery_type` en Supabase) */
 export type DeliveryType = "envio" | "retiro"

@@ -118,7 +118,7 @@ export function OrderInvoiceControls({
         onChoose={(m) => void onPickPayment(m)}
       />
       <div className="mt-3 flex flex-wrap gap-2 border-t border-skailea-blush/25 pt-3">
-        {!order.paid && (
+        {!order.paid && order.status !== "cancelado" && (
           <button
             type="button"
             onClick={() => setMarkOpen(true)}
