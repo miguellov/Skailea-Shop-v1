@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
-import {
-  type NotifyOrderPayload,
-  sendOrderNotificationEmail,
-} from "@/lib/order-notify"
+import { sendOrderNotification } from "@/lib/email"
+import type { NotifyOrderPayload } from "@/lib/order-notify"
 import type { DeliveryType } from "@/lib/types"
 
 export const runtime = "nodejs"
@@ -37,7 +35,21 @@ export async function POST(req: Request) {
     if (!isPayload(json)) {
       return NextResponse.json({ error: "Payload inválido" }, { status: 400 })
     }
-    await sendOrderNotificationEmail(json)
+    await sendOrderNotification({
+      customer_name: json.customer_name,
+      customer_phone: json.customer_phone_display,
+      items: json.items.map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+      })),
+      total: json.total,
+      delivery_type: json.delivery_type,
+      delivery_address:
+        json.delivery_type === "envio"
+          ? json.delivery_address?.trim() || undefined
+          : undefined,
+    })
     return NextResponse.json({ ok: true })
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Error al enviar email"

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { createServiceRoleClient } from "@/lib/supabase-server"
 import { formatSupabaseError } from "@/lib/supabase-errors"
-import { triggerOrderNotificationFetch } from "@/lib/order-notify"
+import { sendOrderNotification } from "@/lib/email"
 import type {
   DeliveryType,
   Order,
@@ -182,26 +182,20 @@ export async function submitStoreOrder(
     console.log("[submitStoreOrder] (6) OK pedido id:", idStr)
 
     try {
-      await triggerOrderNotificationFetch({
+      await sendOrderNotification({
         customer_name: name,
-        customer_phone_display: input.customer_phone.trim(),
-        delivery_type: dtype,
-        delivery_address: deliveryAddr,
-        delivery_notes: deliveryNotes,
+        customer_phone: input.customer_phone.trim(),
         items: input.items.map((i) => ({
           name: i.name,
           quantity: i.quantity,
           unit_price: i.unit_price,
-          line_total: i.line_total,
         })),
         total: input.total,
-        notes: input.notes ?? null,
+        delivery_type: dtype,
+        delivery_address: deliveryAddr ?? undefined,
       })
-    } catch (notifyErr) {
-      console.warn(
-        "[submitStoreOrder] Aviso: notificación email falló (pedido ya guardado):",
-        formatSupabaseError(notifyErr)
-      )
+    } catch (e) {
+      console.error("Error enviando email:", e)
     }
 
     return { success: true, id: idStr }
@@ -520,25 +514,19 @@ export async function createOrder(input: {
   console.log("[createOrder] (7) OK pedido id:", inserted.id)
 
   try {
-    await triggerOrderNotificationFetch({
+    await sendOrderNotification({
       customer_name: input.customer_name.trim(),
-      customer_phone_display: input.customer_phone.trim(),
-      delivery_type: dtype,
-      delivery_address: deliveryAddr,
-      delivery_notes: null,
+      customer_phone: input.customer_phone.trim(),
       items: items.map((i) => ({
         name: i.name,
         quantity: i.quantity,
         unit_price: i.unit_price,
-        line_total: i.line_total,
       })),
       total,
-      notes: input.notes,
+      delivery_type: dtype,
+      delivery_address: deliveryAddr ?? undefined,
     })
-  } catch (notifyErr) {
-    console.warn(
-      "[createOrder] Aviso: notificación email falló (pedido ya guardado):",
-      formatSupabaseError(notifyErr)
-    )
+  } catch (e) {
+    console.error("Error enviando email:", e)
   }
 }
