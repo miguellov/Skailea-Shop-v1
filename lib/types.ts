@@ -60,6 +60,17 @@ export type OrderLineItem = {
 }
 
 /** Fila de `orders` en Supabase */
+/** Fila de `waitlist` (avisos de reposición) */
+export type WaitlistEntry = {
+  id: string
+  product_id: string | null
+  product_name: string
+  customer_name: string
+  customer_phone: string
+  notified: boolean
+  created_at: string
+}
+
 export type Order = {
   id: string
   customer_name: string

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { Brand, Category, ProductPublic } from "@/lib/types"
 import {
   SITE_INSTAGRAM_HANDLE,
@@ -73,6 +73,25 @@ export function CatalogoCliente({
   const [brandId, setBrandId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [open, setOpen] = useState<ProductPublic | null>(null)
+
+  const closeModal = useCallback(() => {
+    setOpen(null)
+    if (typeof window === "undefined") return
+    const u = new URL(window.location.href)
+    if (!u.searchParams.has("p")) return
+    u.searchParams.delete("p")
+    const q = u.searchParams.toString()
+    window.history.replaceState({}, "", u.pathname + (q ? `?${q}` : ""))
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const params = new URLSearchParams(window.location.search)
+    const pid = params.get("p")
+    if (!pid) return
+    const found = products.find((p) => p.id === pid)
+    if (found) setOpen(found)
+  }, [products])
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim()
@@ -179,7 +198,7 @@ export function CatalogoCliente({
               placeholder="Buscar fragancias, categorías…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-full border border-white/20 bg-white/12 py-3.5 pl-12 pr-11 text-sm text-skailea-cream shadow-inner outline-none ring-skailea-gold/35 placeholder:text-skailea-cream/45 backdrop-blur-sm focus:border-skailea-gold/45 focus:ring-2 sm:py-4 sm:text-base"
+              className="w-full rounded-full border border-white/20 bg-white/12 py-3.5 pl-12 pr-11 text-sm text-gray-800 shadow-inner outline-none ring-skailea-gold/35 placeholder:text-gray-400 backdrop-blur-sm focus:border-skailea-gold/45 focus:ring-2 sm:py-4 sm:text-base"
             />
             {searchQuery.length > 0 && (
               <button
@@ -251,7 +270,7 @@ export function CatalogoCliente({
 
       <ProductModal
         product={open}
-        onClose={() => setOpen(null)}
+        onClose={closeModal}
         whatsappDigits={whatsappDigits}
       />
     </>

@@ -10,6 +10,7 @@ const nav = [
   { href: "/admin/dashboard", label: "Resumen" },
   { href: "/admin/dashboard/reportes", label: "📊 Reportes" },
   { href: "/admin/dashboard/pedidos", label: "📥 Pedidos" },
+  { href: "/admin/dashboard/lista-espera", label: "🔔 Lista de espera" },
   { href: "/admin/dashboard/categorias", label: "🏷️ Categorías" },
   { href: "/admin/dashboard/productos", label: "Productos" },
 ]
@@ -17,9 +18,11 @@ const nav = [
 export function AdminShell({
   children,
   newOrdersCount = 0,
+  waitlistPendingCount = 0,
 }: {
   children: ReactNode
   newOrdersCount?: number
+  waitlistPendingCount?: number
 }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -58,6 +61,14 @@ export function AdminShell({
                       {newOrdersCount > 99 ? "99+" : newOrdersCount}
                     </span>
                   )}
+                  {item.href === "/admin/dashboard/lista-espera" &&
+                    waitlistPendingCount > 0 && (
+                      <span className="min-w-[1.25rem] rounded-full bg-skailea-gold px-1.5 text-center text-[10px] font-bold text-skailea-deep">
+                        {waitlistPendingCount > 99
+                          ? "99+"
+                          : waitlistPendingCount}
+                      </span>
+                    )}
                 </Link>
               )
             })}

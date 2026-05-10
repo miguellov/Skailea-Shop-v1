@@ -1,11 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { submitStoreOrder } from "@/app/admin/order-actions"
 import { useCart } from "@/components/tienda/CartContext"
 import { ContactOrderModal } from "@/components/tienda/ContactOrderModal"
 import { ProductImageCarousel } from "@/components/tienda/ProductImageCarousel"
 import { ProductImageLightbox } from "@/components/tienda/ProductImageLightbox"
+import { ProductWaitlistModal } from "@/components/tienda/ProductWaitlistModal"
+import { StoreToast } from "@/components/tienda/StoreToast"
+import { getProductShareUrl } from "@/lib/product-links"
 import type { OrderLineItem, ProductPublic } from "@/lib/types"
 import {
   formatDeliveryAddressMultiline,
@@ -13,9 +16,11 @@ import {
 } from "@/lib/delivery-format"
 import {
   buildProductOrderWhatsAppMessage,
+  buildProductShareWhatsAppMessage,
   formatPriceDOP,
   formatRdCartMoney,
   getProductGalleryImages,
+  whatsappShareTextOnlyUrl,
   whatsappUrl,
 } from "@/lib/utils"
 
@@ -32,6 +37,56 @@ function WhatsAppIcon({ className }: { className?: string }) {
   )
 }
 
+function ShareArrowUpIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M12 3v12" />
+      <path d="m7 8 5-5 5 5" />
+      <path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+    </svg>
+  )
+}
+
+function InstagramGlyphIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 1.366.062 2.633.35 3.608 1.325.975.975 1.263 2.242 1.325 3.608.058 1.266.07 1.646.07 4.85s-.012 3.584-.07 4.85c-.062 1.366-.35 2.633-1.325 3.608-.975.975-2.242 1.263-3.608 1.325-1.266.058-1.646.07-4.85.07s-3.584-.012-4.85-.07c-1.366-.062-2.633-.35-3.608-1.325-.975-.975-1.263-2.242-1.325-3.608C2.175 15.647 2.163 15.267 2.163 12s.012-3.584.07-4.85c.062-1.366.35-2.633 1.325-3.608.975-.975 2.242-1.263 3.608-1.325C8.416 2.175 8.796 2.163 12 2.163zm0 1.802c-3.155 0-3.535.012-4.787.068-1.17.054-1.805.248-2.228.412-.56.216-.96.474-1.38.894-.42.42-.678.82-.894 1.38-.164.423-.358 1.058-.412 2.228-.056 1.252-.068 1.632-.068 4.787s.012 3.535.068 4.787c.054 1.17.248 1.805.412 2.228.216.56.474.96.894 1.38.42.42.82.678 1.38.894.423.164 1.058.358 2.228.412 1.252.056 1.632.068 4.787.068s3.535-.012 4.787-.068c1.17-.054 1.805-.248 2.228-.412.56-.216.96-.474 1.38-.894.42-.42.678-.82.894-1.38.164-.423.358-1.058.412-2.228.056-1.252.068-1.632.068-4.787s-.012-3.535-.068-4.787c-.054-1.17-.248-1.805-.412-2.228-.216-.56-.474-.96-.894-1.38-.42-.42-.82-.678-1.38-.894-.423-.164-1.058-.358-2.228-.412-1.252-.056-1.632-.068-4.787-.068zm0 4.883a3.333 3.333 0 1 1 0 6.666 3.333 3.333 0 0 1 0-6.666zm0 8.444a5.111 5.111 0 1 0 0-10.222 5.111 5.111 0 0 0 0 10.222zm6.538-.222a1.185 1.185 0 1 0-2.37 0 1.185 1.185 0 0 0 2.37 0z" />
+    </svg>
+  )
+}
+
+function LinkIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  )
+}
+
 type Props = {
   product: ProductPublic | null
   onClose: () => void
@@ -43,18 +98,57 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [contactOpen, setContactOpen] = useState(false)
+  const [shareMenuOpen, setShareMenuOpen] = useState(false)
+  const [waitlistOpen, setWaitlistOpen] = useState(false)
+  const [toastMessage, setToastMessage] = useState("")
+  const [toastOpen, setToastOpen] = useState(false)
+  const shareWrapRef = useRef<HTMLDivElement>(null)
+
+  function showToast(msg: string) {
+    setToastMessage(msg)
+    setToastOpen(true)
+    setShareMenuOpen(false)
+  }
 
   useEffect(() => {
     setLightboxOpen(false)
     setContactOpen(false)
+    setShareMenuOpen(false)
+    setWaitlistOpen(false)
+    setToastOpen(false)
+    setToastMessage("")
   }, [product?.id])
+
+  useEffect(() => {
+    if (!shareMenuOpen) return
+    const onDoc = (e: MouseEvent) => {
+      if (
+        shareWrapRef.current &&
+        !shareWrapRef.current.contains(e.target as Node)
+      ) {
+        setShareMenuOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", onDoc)
+    return () => document.removeEventListener("mousedown", onDoc)
+  }, [shareMenuOpen])
 
   useEffect(() => {
     if (!product) return
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return
+      if (waitlistOpen) {
+        setWaitlistOpen(false)
+        e.preventDefault()
+        return
+      }
       if (contactOpen) {
         setContactOpen(false)
+        e.preventDefault()
+        return
+      }
+      if (shareMenuOpen) {
+        setShareMenuOpen(false)
         e.preventDefault()
         return
       }
@@ -72,7 +166,14 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
       window.removeEventListener("keydown", onKey)
       document.body.style.overflow = prev
     }
-  }, [product, onClose, lightboxOpen, contactOpen])
+  }, [
+    product,
+    onClose,
+    lightboxOpen,
+    contactOpen,
+    shareMenuOpen,
+    waitlistOpen,
+  ])
 
   if (!product) return null
 
@@ -156,9 +257,19 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
 
           <p className="text-sm text-skailea-charcoal/85">
             {out
-              ? "Este producto está agotado. Escríbenos por si vuelve pronto."
+              ? "Este producto está agotado. Déjanos tus datos y te avisamos por WhatsApp."
               : `Disponible (${product.stock} en stock).`}
           </p>
+
+          {out && (
+            <button
+              type="button"
+              onClick={() => setWaitlistOpen(true)}
+              className="w-full rounded-full border-2 border-skailea-gold/55 bg-white py-3 text-sm font-semibold text-skailea-deep shadow-sm transition hover:bg-skailea-blush/30"
+            >
+              🔔 Avisarme cuando llegue
+            </button>
+          )}
 
           {!out && (
             <button
@@ -174,33 +285,117 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
             </button>
           )}
 
-          <div className="mt-auto flex flex-col gap-2 pt-2 sm:flex-row sm:justify-end">
+          <div className="mt-auto flex flex-col gap-2 pt-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch sm:justify-end">
+              <div
+                className="relative order-1 sm:order-2 sm:flex-1 sm:max-w-[12.5rem]"
+                ref={shareWrapRef}
+              >
+                <button
+                  type="button"
+                  onClick={() => setShareMenuOpen((v) => !v)}
+                  aria-expanded={shareMenuOpen}
+                  aria-haspopup="true"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-skailea-deep/15 bg-white px-5 py-3 text-sm font-semibold text-skailea-deep shadow-sm transition hover:border-skailea-gold/45 hover:bg-skailea-cream"
+                >
+                  <ShareArrowUpIcon className="h-5 w-5 shrink-0 text-skailea-rose" />
+                  Compartir
+                </button>
+                {shareMenuOpen && (
+                  <div
+                    className="absolute bottom-full left-0 right-0 z-[60] mb-2 overflow-hidden rounded-2xl border border-skailea-blush/45 bg-white py-1 shadow-xl sm:left-auto sm:right-0 sm:min-w-[17.5rem]"
+                    role="menu"
+                  >
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-skailea-deep transition hover:bg-skailea-blush/35"
+                      onClick={() => {
+                        const msg = buildProductShareWhatsAppMessage({
+                          productName: product.name,
+                          priceRdLabel: formatRdCartMoney(product.price),
+                        })
+                        const href = whatsappShareTextOnlyUrl(msg)
+                        window.open(href, "_blank", "noopener,noreferrer")
+                        setShareMenuOpen(false)
+                      }}
+                    >
+                      <span className="text-lg" aria-hidden>
+                        📱
+                      </span>
+                      <span className="font-medium">WhatsApp</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-skailea-deep transition hover:bg-skailea-blush/35"
+                      onClick={async () => {
+                        const url = getProductShareUrl(product.id)
+                        try {
+                          await navigator.clipboard.writeText(url)
+                          showToast(
+                            "Link copiado! Pégalo en tu historia de Instagram"
+                          )
+                        } catch {
+                          showToast(
+                            "No se pudo copiar. Mantén pulsado el enlace en el navegador."
+                          )
+                        }
+                      }}
+                    >
+                      <InstagramGlyphIcon className="h-5 w-5 shrink-0 text-skailea-deep" />
+                      <span className="font-medium">Instagram Stories</span>
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm text-skailea-deep transition hover:bg-skailea-blush/35"
+                      onClick={async () => {
+                        const url = getProductShareUrl(product.id)
+                        try {
+                          await navigator.clipboard.writeText(url)
+                          showToast("Link copiado al portapapeles ✅")
+                        } catch {
+                          showToast(
+                            "No se pudo copiar. Intenta desde el menú del navegador."
+                          )
+                        }
+                      }}
+                    >
+                      <LinkIcon className="h-5 w-5 shrink-0 text-skailea-gold" />
+                      <span className="font-medium">Copiar link</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+              {canWhatsApp ? (
+                <button
+                  type="button"
+                  disabled={out}
+                  onClick={() => !out && setContactOpen(true)}
+                  className={`order-2 inline-flex flex-1 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-sm transition sm:max-w-[12.5rem] ${
+                    out
+                      ? "cursor-not-allowed bg-skailea-charcoal/35 text-skailea-cream/80"
+                      : "border-2 border-skailea-gold/50 bg-white text-[#128C7E] shadow-sm hover:bg-skailea-cream"
+                  }`}
+                >
+                  <WhatsAppIcon className="h-5 w-5 shrink-0 text-[#25D366]" />
+                  WhatsApp
+                </button>
+              ) : (
+                <p className="order-2 text-center text-xs text-skailea-rose sm:text-right">
+                  Configura NEXT_PUBLIC_WHATSAPP_NUMBER en .env.local para pedir
+                  por WhatsApp.
+                </p>
+              )}
+            </div>
             <button
               type="button"
               onClick={onClose}
-              className="order-2 rounded-full border border-skailea-deep/20 px-5 py-3 text-sm font-medium text-skailea-deep transition hover:bg-skailea-blush/40 sm:order-1 sm:px-4"
+              className="rounded-full border border-skailea-deep/20 px-5 py-3 text-sm font-medium text-skailea-deep transition hover:bg-skailea-blush/40 sm:self-start"
             >
               Cerrar
             </button>
-            {canWhatsApp ? (
-              <button
-                type="button"
-                disabled={out}
-                onClick={() => !out && setContactOpen(true)}
-                className={`order-1 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-sm transition sm:order-2 ${
-                  out
-                    ? "cursor-not-allowed bg-skailea-charcoal/35 text-skailea-cream/80"
-                    : "border-2 border-skailea-gold/50 bg-white text-[#128C7E] shadow-sm hover:bg-skailea-cream"
-                }`}
-              >
-                <WhatsAppIcon className="h-5 w-5 shrink-0 text-[#25D366]" />
-                WhatsApp
-              </button>
-            ) : (
-              <p className="order-1 text-center text-xs text-skailea-rose sm:order-2 sm:text-right">
-                Configura NEXT_PUBLIC_WHATSAPP_NUMBER en .env.local para pedir por WhatsApp.
-              </p>
-            )}
           </div>
         </div>
       </div>
@@ -212,6 +407,21 @@ export function ProductModal({ product, onClose, whatsappDigits }: Props) {
       urls={gallery}
       initialIndex={lightboxIndex}
       alt={product.name}
+    />
+
+    <ProductWaitlistModal
+      open={waitlistOpen}
+      onClose={() => setWaitlistOpen(false)}
+      product={product}
+    />
+
+    <StoreToast
+      message={toastMessage}
+      open={toastOpen}
+      onClose={() => {
+        setToastOpen(false)
+        setToastMessage("")
+      }}
     />
 
     <ContactOrderModal

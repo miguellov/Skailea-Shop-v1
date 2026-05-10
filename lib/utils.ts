@@ -22,10 +22,26 @@ export function whatsappOrderMessage(productName: string, priceLabel: string): s
   return `Hola! Me interesa: ${productName} - ${priceLabel}`
 }
 
+/** Mensaje para compartir producto por WhatsApp (tienda pública). */
+export function buildProductShareWhatsAppMessage(params: {
+  productName: string
+  priceRdLabel: string
+}): string {
+  return `Mira este producto de Skailea Shop! 🛍️
+${params.productName}
+Precio: ${params.priceRdLabel}
+👉 skaileashop.com`
+}
+
 export function whatsappUrl(phoneDigits: string, message: string): string {
   const n = phoneDigits.replace(/\D/g, "")
   if (!n) return "#"
   return `https://wa.me/${n}?text=${encodeURIComponent(message)}`
+}
+
+/** Compartir solo el mensaje; el usuario elige el contacto en WhatsApp. */
+export function whatsappShareTextOnlyUrl(message: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(message)}`
 }
 
 /**
