@@ -7,7 +7,11 @@ import type { DashboardOrderStats } from "@/app/admin/order-actions"
 import { formatPriceDOP } from "@/lib/utils"
 
 export function DashboardHome({ orderStats }: { orderStats: DashboardOrderStats }) {
-  const { stats, categories } = useAdminProducts()
+  const { stats, categories, products } = useAdminProducts()
+
+  const valorInventario = products
+    .filter((p) => p.active)
+    .reduce((sum, p) => sum + p.price * p.stock, 0)
 
   return (
     <div className="space-y-8">
@@ -24,6 +28,7 @@ export function DashboardHome({ orderStats }: { orderStats: DashboardOrderStats 
         total={stats.total}
         agotados={stats.agotados}
         stockBajo={stats.stockBajo}
+        valorInventario={valorInventario}
         orderStats={orderStats}
       />
 

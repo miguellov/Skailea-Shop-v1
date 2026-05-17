@@ -5,10 +5,17 @@ type Props = {
   total: number
   agotados: number
   stockBajo: number
+  valorInventario: number
   orderStats: DashboardOrderStats
 }
 
-export function StatsCards({ total, agotados, stockBajo, orderStats }: Props) {
+export function StatsCards({
+  total,
+  agotados,
+  stockBajo,
+  valorInventario,
+  orderStats,
+}: Props) {
   const orderCards = [
     {
       label: "Pedidos nuevos hoy",
@@ -31,12 +38,29 @@ export function StatsCards({ total, agotados, stockBajo, orderStats }: Props) {
   ]
 
   const productCards = [
-    { label: "Total productos", value: total, accent: "border-skailea-gold/40 bg-skailea-cream" },
-    { label: "Agotados", value: agotados, accent: "border-skailea-rose/35 bg-skailea-blush/30" },
+    {
+      label: "Total productos",
+      value: total,
+      accent: "border-skailea-gold/40 bg-skailea-cream",
+      format: "number" as const,
+    },
+    {
+      label: "Agotados",
+      value: agotados,
+      accent: "border-skailea-rose/35 bg-skailea-blush/30",
+      format: "number" as const,
+    },
     {
       label: "Stock bajo (<5)",
       value: stockBajo,
       accent: "border-skailea-deep/15 bg-skailea-cream",
+      format: "number" as const,
+    },
+    {
+      label: "💰 Valor en inventario",
+      value: valorInventario,
+      accent: "border-emerald-400/50 bg-emerald-50",
+      format: "money" as const,
     },
   ]
 
@@ -60,10 +84,11 @@ export function StatsCards({ total, agotados, stockBajo, orderStats }: Props) {
           </li>
         ))}
       </ul>
+
       <p className="text-xs font-semibold uppercase tracking-[0.15em] text-skailea-gold">
         Inventario
       </p>
-      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {productCards.map((c) => (
           <li
             key={c.label}
@@ -72,7 +97,9 @@ export function StatsCards({ total, agotados, stockBajo, orderStats }: Props) {
             <p className="text-xs font-medium uppercase tracking-wide text-skailea-rose">
               {c.label}
             </p>
-            <p className="mt-2 font-serif text-3xl font-bold text-skailea-deep">{c.value}</p>
+            <p className="mt-2 font-serif text-3xl font-bold text-skailea-deep">
+              {c.format === "money" ? formatPriceDOP(c.value) : c.value}
+            </p>
           </li>
         ))}
       </ul>
