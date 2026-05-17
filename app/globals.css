@@ -13,6 +13,12 @@
   --charcoal: #1a1a2e;
   --background: var(--cream);
   --foreground: var(--charcoal);
+
+  /* Día de las Madres (evergreen) */
+  --mama-primary: #d4699a;
+  --mama-secondary: #9b59b6;
+  --mama-gold: #f0c060;
+  --mama-soft: #fde8f0;
 }
 
 body {
@@ -101,5 +107,71 @@ body {
     color: var(--blush);
     animation: skailea-tagline-fade 1.15s ease-out 0.12s forwards;
     opacity: 0;
+  }
+
+  .mama-ticker {
+    background: linear-gradient(90deg, var(--mama-primary), var(--mama-secondary));
+  }
+
+  .mama-hero-surface {
+    background: linear-gradient(
+      135deg,
+      var(--mama-primary) 0%,
+      #c45a8a 35%,
+      var(--mama-secondary) 70%,
+      #7d4a9e 100%
+    );
+  }
+
+  .mama-welcome-popup {
+    background: linear-gradient(
+      145deg,
+      var(--mama-primary) 0%,
+      var(--mama-secondary) 55%,
+      #7d4a9e 100%
+    );
+  }
+
+  @keyframes mama-badge-pulse {
+    0%,
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.35);
+    }
+    50% {
+      transform: scale(1.03);
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0);
+    }
+  }
+
+  .mama-badge-pulse {
+    animation: mama-badge-pulse 2.2s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mama-badge-pulse {
+      animation: none;
+    }
+  }
+
+  @keyframes mama-popup-enter {
+    from {
+      opacity: 0;
+      transform: translate(-50%, -48%) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+
+  .mama-popup-enter {
+    animation: mama-popup-enter 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mama-popup-enter {
+      animation: none;
+    }
   }
 }

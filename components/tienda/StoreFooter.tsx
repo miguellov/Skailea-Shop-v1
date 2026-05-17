@@ -91,7 +91,11 @@ export function StoreFooter() {
           </a>
         </div>
 
-        <p className="text-center text-sm font-medium text-skailea-gold/95 sm:text-left">
+        <p className="text-center text-sm font-medium text-[var(--mama-soft)] sm:text-left">
+          💐 Celebra a mamá con el aroma perfecto · Tu Aroma Deja Huella 🌸
+        </p>
+
+        <p className="text-center text-xs text-skailea-cream/70 sm:text-left">
           {SHIPPING_FOOTER_LINE}
         </p>
 

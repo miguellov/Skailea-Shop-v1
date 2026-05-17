@@ -3,6 +3,7 @@
 import { useCart } from "@/components/tienda/CartContext"
 import { ProductImageCarousel } from "@/components/tienda/ProductImageCarousel"
 import type { ProductPublic } from "@/lib/types"
+import { isMamaGiftCategory } from "@/lib/mama-promo"
 import { formatPriceDOP, getProductGalleryImages } from "@/lib/utils"
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 
 export function ProductCard({ product, onOpen }: Props) {
   const out = product.stock === 0
+  const mamaGift = isMamaGiftCategory(product.category_name)
   const { addItem, openDrawer } = useCart()
   const gallery = getProductGalleryImages(product)
 
@@ -30,8 +32,17 @@ export function ProductCard({ product, onOpen }: Props) {
       >
         <div className="relative aspect-square w-full shrink-0 overflow-hidden bg-skailea-blush/20">
           <ProductImageCarousel urls={gallery} alt={product.name} />
+          {mamaGift && !out && (
+            <span className="pointer-events-none absolute left-2 top-2 z-[4] max-w-[calc(100%-1rem)] truncate rounded-full bg-[var(--mama-primary)] px-2 py-0.5 text-[9px] font-semibold text-white shadow-md sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-[10px]">
+              💐 Ideal para mamá
+            </span>
+          )}
           {out && (
-            <span className="pointer-events-none absolute left-2 top-2 z-[4] max-w-[calc(100%-1rem)] truncate rounded-full border border-white/25 bg-skailea-deep/88 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-skailea-cream shadow-md backdrop-blur-[2px] sm:left-3 sm:top-3 sm:px-2.5 sm:py-1 sm:text-[10px]">
+            <span
+              className={`pointer-events-none absolute z-[4] max-w-[calc(100%-1rem)] truncate rounded-full border border-white/25 bg-skailea-deep/88 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-skailea-cream shadow-md backdrop-blur-[2px] sm:px-2.5 sm:py-1 sm:text-[10px] ${
+                mamaGift ? "right-2 top-2 sm:right-3 sm:top-3" : "left-2 top-2 sm:left-3 sm:top-3"
+              }`}
+            >
               Agotado
             </span>
           )}

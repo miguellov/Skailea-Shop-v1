@@ -26,6 +26,12 @@ const config: Config = {
           gold: "var(--gold)",
           charcoal: "var(--charcoal)",
         },
+        mama: {
+          primary: "var(--mama-primary)",
+          secondary: "var(--mama-secondary)",
+          gold: "var(--mama-gold)",
+          soft: "var(--mama-soft)",
+        },
       },
       keyframes: {
         "upload-indeterminate": {

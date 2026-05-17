@@ -8,9 +8,15 @@ import {
   WA_FLOAT_MESSAGE,
 } from "@/lib/site"
 import { CatalogFilters } from "@/components/tienda/CatalogFilters"
+import { MadreHero } from "@/components/tienda/MadreHero"
+import { MamaGiftFilters } from "@/components/tienda/MamaGiftFilters"
 import { ProductCard } from "@/components/tienda/ProductCard"
 import { ProductModal } from "@/components/tienda/ProductModal"
 import { StoreLogo } from "@/components/tienda/StoreLogo"
+import {
+  type MamaPriceRange,
+  productMatchesMamaPriceRange,
+} from "@/lib/mama-promo"
 
 type Props = {
   categories: Category[]
@@ -71,6 +77,7 @@ export function CatalogoCliente({
 }: Props) {
   const [categorySlug, setCategorySlug] = useState<string | null>(null)
   const [brandId, setBrandId] = useState<string | null>(null)
+  const [mamaPriceRange, setMamaPriceRange] = useState<MamaPriceRange>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [open, setOpen] = useState<ProductPublic | null>(null)
 
@@ -100,7 +107,7 @@ export function CatalogoCliente({
     if (products.length === 0) return []
 
     if (q) {
-      return products.filter((p) => {
+      let list = products.filter((p) => {
         const name = p.name.toLowerCase()
         const cat = (p.category_name ?? "").toLowerCase()
         const slugWords = (p.category_slug ?? "").replace(/-/g, " ").toLowerCase()
@@ -112,6 +119,12 @@ export function CatalogoCliente({
           brand.includes(qLower)
         )
       })
+      if (mamaPriceRange) {
+        list = list.filter((p) =>
+          productMatchesMamaPriceRange(p.price, mamaPriceRange)
+        )
+      }
+      return list
     }
 
     let list = products
@@ -121,8 +134,13 @@ export function CatalogoCliente({
     if (brandId) {
       list = list.filter((p) => p.brand_id === brandId)
     }
+    if (mamaPriceRange) {
+      list = list.filter((p) =>
+        productMatchesMamaPriceRange(p.price, mamaPriceRange)
+      )
+    }
     return list
-  }, [products, categorySlug, brandId, searchQuery])
+  }, [products, categorySlug, brandId, mamaPriceRange, searchQuery])
 
   const emptyCatalog = products.length === 0
   const searchTrimmed = searchQuery.trim()
@@ -131,7 +149,9 @@ export function CatalogoCliente({
   const showFilterEmpty =
     !emptyCatalog &&
     searchTrimmed.length === 0 &&
-    (categorySlug !== null || brandId !== null) &&
+    (categorySlug !== null ||
+      brandId !== null ||
+      mamaPriceRange !== null) &&
     filtered.length === 0
 
   return (
@@ -223,19 +243,17 @@ export function CatalogoCliente({
         </div>
       </header>
 
-      <section className="skailea-hero-surface border-b border-skailea-blush/30">
-        <div className="mx-auto max-w-6xl px-4 py-9 sm:px-6 sm:py-12">
-          <h2 className="max-w-xl font-serif text-2xl font-medium leading-tight text-skailea-deep sm:text-3xl md:text-4xl">
-            Descubre tu fragancia perfecta
-          </h2>
-          <p className="mt-3 max-w-lg text-sm leading-relaxed text-skailea-charcoal/80 sm:text-base">
-            Selección curada de belleza y bienestar. Toca un producto para ver
-            precio por mayor y armar tu pedido por WhatsApp.
-          </p>
-        </div>
-      </section>
+      <MadreHero />
 
-      <main className="mx-auto max-w-6xl px-3 pb-28 pt-1 sm:px-6 sm:pb-32">
+      <MamaGiftFilters
+        selected={mamaPriceRange}
+        onSelect={setMamaPriceRange}
+      />
+
+      <main
+        id="catalogo"
+        className="mx-auto max-w-6xl px-3 pb-28 pt-1 sm:px-6 sm:pb-32"
+      >
         <CatalogFilters
           categories={categories}
           brands={brands}

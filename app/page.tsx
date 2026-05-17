@@ -1,5 +1,5 @@
 import { CatalogoCliente } from "@/components/tienda/CatalogoCliente"
-import { MadreBanner } from "@/components/tienda/MadreBanner"
+import { MamaWelcomePopup } from "@/components/tienda/MamaWelcomePopup"
 import { PromoTicker } from "@/components/tienda/PromoTicker"
 import { StoreFooter } from "@/components/tienda/StoreFooter"
 import { TiendaShell } from "@/components/tienda/TiendaShell"
@@ -17,7 +17,7 @@ export default async function Home() {
     <TiendaShell whatsappDigits={whatsappDigits}>
       <div className="min-h-screen bg-skailea-cream font-sans text-skailea-deep">
         <PromoTicker />
-        <MadreBanner />
+        <MamaWelcomePopup />
         <CatalogoCliente
           categories={categories}
           brands={brands}
