@@ -174,4 +174,115 @@ body {
       animation: none;
     }
   }
+
+  @keyframes blob {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    33% {
+      transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+      transform: translate(-20px, 20px) scale(0.95);
+    }
+  }
+
+  @keyframes beat {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.15);
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in-down {
+    from {
+      opacity: 0;
+      transform: translateY(-12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-blob {
+    animation: blob 10s infinite alternate ease-in-out;
+  }
+
+  .animate-beat {
+    animation: beat 1.2s infinite ease-in-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.35s ease-out forwards;
+  }
+
+  .animate-fade-in-down {
+    animation: fade-in-down 0.5s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.25s ease-out forwards;
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 8s linear infinite;
+  }
+
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+
+  .bg-dashed-border {
+    background-image: radial-gradient(circle, #f43f5e 10%, transparent 11%);
+    background-size: 8px 8px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-blob,
+    .animate-beat,
+    .animate-fade-in,
+    .animate-fade-in-down,
+    .animate-scale-in,
+    .animate-spin-slow {
+      animation: none;
+    }
+  }
 }

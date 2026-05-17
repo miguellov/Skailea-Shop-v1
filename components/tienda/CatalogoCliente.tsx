@@ -14,8 +14,8 @@ import { ProductCard } from "@/components/tienda/ProductCard"
 import { ProductModal } from "@/components/tienda/ProductModal"
 import { StoreLogo } from "@/components/tienda/StoreLogo"
 import {
-  type MamaPriceRange,
-  productMatchesMamaPriceRange,
+  type MamaPersonalityTag,
+  productMatchesMamaPersonality,
 } from "@/lib/mama-promo"
 
 type Props = {
@@ -77,7 +77,8 @@ export function CatalogoCliente({
 }: Props) {
   const [categorySlug, setCategorySlug] = useState<string | null>(null)
   const [brandId, setBrandId] = useState<string | null>(null)
-  const [mamaPriceRange, setMamaPriceRange] = useState<MamaPriceRange>(null)
+  const [mamaPersonality, setMamaPersonality] =
+    useState<MamaPersonalityTag>("todos")
   const [searchQuery, setSearchQuery] = useState("")
   const [open, setOpen] = useState<ProductPublic | null>(null)
 
@@ -119,9 +120,9 @@ export function CatalogoCliente({
           brand.includes(qLower)
         )
       })
-      if (mamaPriceRange) {
+      if (mamaPersonality !== "todos") {
         list = list.filter((p) =>
-          productMatchesMamaPriceRange(p.price, mamaPriceRange)
+          productMatchesMamaPersonality(p, mamaPersonality)
         )
       }
       return list
@@ -134,13 +135,13 @@ export function CatalogoCliente({
     if (brandId) {
       list = list.filter((p) => p.brand_id === brandId)
     }
-    if (mamaPriceRange) {
+    if (mamaPersonality !== "todos") {
       list = list.filter((p) =>
-        productMatchesMamaPriceRange(p.price, mamaPriceRange)
+        productMatchesMamaPersonality(p, mamaPersonality)
       )
     }
     return list
-  }, [products, categorySlug, brandId, mamaPriceRange, searchQuery])
+  }, [products, categorySlug, brandId, mamaPersonality, searchQuery])
 
   const emptyCatalog = products.length === 0
   const searchTrimmed = searchQuery.trim()
@@ -151,7 +152,7 @@ export function CatalogoCliente({
     searchTrimmed.length === 0 &&
     (categorySlug !== null ||
       brandId !== null ||
-      mamaPriceRange !== null) &&
+      mamaPersonality !== "todos") &&
     filtered.length === 0
 
   return (
@@ -243,11 +244,17 @@ export function CatalogoCliente({
         </div>
       </header>
 
-      <MadreHero />
+      <MadreHero
+        onExploreClick={() =>
+          document
+            .getElementById("catalogo")
+            ?.scrollIntoView({ behavior: "smooth" })
+        }
+      />
 
       <MamaGiftFilters
-        selected={mamaPriceRange}
-        onSelect={setMamaPriceRange}
+        selectedTag={mamaPersonality}
+        onSelectTag={setMamaPersonality}
       />
 
       <main
